@@ -128,6 +128,17 @@ fun DonateDialog(
 
         Spacer(modifier = Modifier.height(4.dp))
 
+        // ── Project homepage (GitHub) ─────────────────────────────────────
+        CommunityRow(
+          icon = Icons.AutoMirrored.Outlined.OpenInNew,
+          title = stringResource(R.string.project_homepage) + "（GitHub）",
+          subtitle = "开源仓库 · 可上传 / 下载",
+          onClick = {
+            onDismiss()
+            uriHandler.openUri(GitHubConfig.PROJECT_GITHUB_URL)
+          },
+        )
+
         // ── Community links ───────────────────────────────────────────────
         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
         CommunityRow(
