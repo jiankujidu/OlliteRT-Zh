@@ -70,7 +70,7 @@
   <string name="repo_list_subheading" translatable="false">Manage the sources your models are downloaded from.</string>
   <string name="repo_info_button" translatable="false">About model sources</string>
   <string name="repo_info_title" translatable="false">About Model Sources</string>
-  <string name="repo_info_body" translatable="false">Model sources provide lists of models available for download. OlliteRT ships with a built-in source that is kept up to date automatically.\n\nYou can add custom sources by providing a URL to a compatible model list. Disabling a source hides its models from the download list but does not remove any models already downloaded.\n\nModels that appear in multiple sources are shown once, using the first enabled source.</string>
+  <string name="repo_info_body" translatable="false">Model sources provide lists of models available for download. 一起瞎折腾 ships with a built-in source that is kept up to date automatically.\n\nYou can add custom sources by providing a URL to a compatible model list. Disabling a source hides its models from the download list but does not remove any models already downloaded.\n\nModels that appear in multiple sources are shown once, using the first enabled source.</string>
   <string name="search_models" translatable="false">Search models…</string>
   <string name="filter_all" translatable="false">All</string>
   <string name="filter_downloaded" translatable="false">Downloaded</string>
@@ -110,7 +110,7 @@
   <string name="cd_help">Help</string>
 
   <!-- Fork: LLM HTTP foreground service notification channel -->
-  <string name="llm_http_channel_name" translatable="false">OlliteRT Server</string>
+  <string name="llm_http_channel_name" translatable="false">一起瞎折腾 Server</string>
 
   <!-- Dialog titles and body text -->
   <string name="dialog_clear_logs_title">Delete All Activity Log Entries</string>
@@ -199,9 +199,9 @@
   <string name="error_model_rename_failed">Failed to rename model file</string>
   <string name="dialog_allowlist_conflict_title">Name conflict</string>
   <string name="dialog_allowlist_conflict_body">Please rename the model file or use a different name to avoid conflicts with repository models.</string>
-  <string name="dialog_donate_title">Support OlliteRT</string>
-  <string name="dialog_donate_body">If you find OlliteRT useful, consider supporting its development.</string>
-  <string name="dialog_engagement_title">Enjoying OlliteRT?</string>
+  <string name="dialog_donate_title">Support 一起瞎折腾</string>
+  <string name="dialog_donate_body">If you find 一起瞎折腾 useful, consider supporting its development.</string>
+  <string name="dialog_engagement_title">Enjoying 一起瞎折腾?</string>
   <string name="dialog_engagement_body">This app is built and maintained by a solo developer in their spare time. If it\'s been useful to you, consider supporting its development.</string>
   <string name="label_support_development">Support Development</string>
   <string name="label_star_on_github">Star on GitHub</string>
@@ -213,7 +213,7 @@
   <!-- Notification strings -->
   <string name="notif_action_stop_server">Stop Server</string>
   <string name="notif_action_copy_url">Copy URL</string>
-  <string name="notif_server_running_title">OlliteRT Server Running</string>
+  <string name="notif_server_running_title">一起瞎折腾 Server Running</string>
   <string name="notif_server_body_model">Model: %1$s</string>
   <plurals name="notif_server_body_requests">
     <item quantity="one">Requests: %1$d request</item>
@@ -221,17 +221,17 @@
   </plurals>
   <string name="notif_server_body_url">API URL: %1$s</string>
   <string name="notif_server_body_update">Update available: %1$s</string>
-  <string name="notif_starting_title">OlliteRT</string>
+  <string name="notif_starting_title">一起瞎折腾</string>
   <string name="notif_starting_body">Starting…</string>
   <string name="notif_loading_model_title">Loading model: %1$s</string>
   <string name="notif_loading_model_body">Please wait, this may take a moment…</string>
   <string name="notif_model_load_failed_title">Model Load Failed</string>
-  <string name="notif_update_available_title">OlliteRT Update Available</string>
+  <string name="notif_update_available_title">一起瞎折腾 Update Available</string>
   <string name="notif_update_available_body">Version %1$s is available</string>
   <string name="notif_cross_channel_title_beta" translatable="false">New Release on Beta Channel</string>
   <string name="notif_cross_channel_title_dev" translatable="false">New Release on Dev Channel</string>
   <string name="notif_cross_channel_title_stable" translatable="false">New Release on Stable Channel</string>
-  <string name="notif_cross_channel_body" translatable="false">OlliteRT v%1$s is available</string>
+  <string name="notif_cross_channel_body" translatable="false">一起瞎折腾 v%1$s is available</string>
 
   <!-- Toast messages -->
   <string name="toast_settings_saved">Settings saved</string>
@@ -269,7 +269,7 @@
   <string name="settings_keep_screen_awake" translatable="false">Keep Screen Awake</string>
   <string name="settings_keep_screen_awake_desc" translatable="false">Prevent screen from turning off while app is open</string>
   <string name="settings_floating_monitor" translatable="false">Floating Monitor</string>
-  <string name="settings_floating_monitor_desc" translatable="false">Show live server metrics over other apps while OlliteRT is in the background. Draw over app permission is required</string>
+  <string name="settings_floating_monitor_desc" translatable="false">Show live server metrics over other apps while 一起瞎折腾 is in the background. Draw over app permission is required</string>
   <string name="settings_reset_floating_monitor_position" translatable="false">Reset floating window position</string>
   <string name="settings_reset_floating_monitor_position_desc" translatable="false">Move it back to its default screen position.</string>
   <string name="toast_floating_monitor_position_reset" translatable="false">Floating window position reset</string>
@@ -364,8 +364,8 @@
 
   <!-- Settings: Check for Updates -->
   <string name="settings_check_for_updates" translatable="false">Check for Updates</string>
-  <string name="settings_check_for_updates_desc" translatable="false">Check for a newer version of OlliteRT %1$s. Only checks releases matching your install channel</string>
-  <string name="settings_check_for_updates_desc_cross_channel" translatable="false">Check for the latest version of OlliteRT across all channels (stable, beta, dev)</string>
+  <string name="settings_check_for_updates_desc" translatable="false">Check for a newer version of 一起瞎折腾 %1$s. Only checks releases matching your install channel</string>
+  <string name="settings_check_for_updates_desc_cross_channel" translatable="false">Check for the latest version of 一起瞎折腾 across all channels (stable, beta, dev)</string>
   <string name="settings_update_available" translatable="false">New version available: %1$s</string>
   <string name="settings_download_version" translatable="false">Download %1$s</string>
   <string name="settings_check_now_tooltip" translatable="false">Check now</string>
@@ -416,7 +416,7 @@
   <string name="settings_ha_transcription_prompt_placeholder" translatable="false">Default prompt will be used if left blank</string>
   <string name="settings_ha_config_preview" translatable="false">Generates a configuration.yaml snippet with your current IP (%1$s), port (%2$d)%3$s</string>
   <string name="settings_ha_config_preview_token_suffix" translatable="false">, and bearer token</string>
-  <string name="settings_ha_loopback_warning" translatable="false">Home Assistant cannot reach OlliteRT while the server listens only on this device. Choose Local network or a reachable custom address</string>
+  <string name="settings_ha_loopback_warning" translatable="false">Home Assistant cannot reach 一起瞎折腾 while the server listens only on this device. Choose Local network or a reachable custom address</string>
   <string name="settings_ha_copy_config" translatable="false">Copy Configuration</string>
 
   <!-- Settings: Context Management card -->
@@ -488,7 +488,7 @@
   <string name="settings_donate" translatable="false">Donate</string>
   <string name="settings_licenses" translatable="false">Licenses</string>
   <string name="settings_privacy_policy" translatable="false">Privacy Policy</string>
-  <string name="settings_version_footer" translatable="false">OlliteRT v%1$s (%2$s)</string>
+  <string name="settings_version_footer" translatable="false">一起瞎折腾 v%1$s (%2$s)</string>
 
   <!-- Status screen labels -->
 
@@ -778,7 +778,7 @@
   <string name="logs_error_kind_inference_error" translatable="false">Inference Error</string>
 
   <!-- LogClipboardExport -->
-  <string name="logs_export_chooser_title" translatable="false">Export OlliteRT Logs</string>
+  <string name="logs_export_chooser_title" translatable="false">Export 一起瞎折腾 Logs</string>
 
   <!-- Models screen, navigation & common UI labels -->
 
@@ -793,9 +793,9 @@
 
   <!-- Top bar -->
   <string name="topbar_back" translatable="false">Back</string>
-  <string name="topbar_brand_dev" translatable="false">OlliteRT Dev</string>
-  <string name="topbar_brand_beta" translatable="false">OlliteRT Beta</string>
-  <string name="topbar_brand" translatable="false">OlliteRT</string>
+  <string name="topbar_brand_dev" translatable="false">一起瞎折腾 开发版</string>
+  <string name="topbar_brand_beta" translatable="false">一起瞎折腾 测试版</string>
+  <string name="topbar_brand" translatable="false">一起瞎折腾</string>
   <string name="topbar_settings" translatable="false">Settings</string>
 
   <!-- Status pill labels -->
@@ -907,7 +907,7 @@
 
   <!-- UpdateCheckWorker: Notification channel (visible in Android system notification settings) -->
   <string name="notif_channel_app_update_name" translatable="false">App Updates</string>
-  <string name="notif_channel_app_update_desc" translatable="false">Notifies when a new version of OlliteRT is available</string>
+  <string name="notif_channel_app_update_desc" translatable="false">Notifies when a new version of 一起瞎折腾 is available</string>
   <string name="notif_channel_beta_release_name" translatable="false">Beta Releases</string>
   <string name="notif_channel_beta_release_desc" translatable="false">Notifications about new beta releases from other channels.</string>
   <string name="notif_channel_dev_release_name" translatable="false">Dev Releases</string>
@@ -1035,9 +1035,9 @@
 
 
   <!-- DownloadRepository: notification channel -->
-  <string name="notif_channel_download_name" translatable="false">OlliteRT download notification</string>
+  <string name="notif_channel_download_name" translatable="false">一起瞎折腾 download notification</string>
 
-  <!-- OlliteRTApp: server error dialog -->
+  <!-- 一起瞎折腾App: server error dialog -->
   <string name="dialog_server_error_title">Server Error</string>
   <string name="view_logs">View logs</string>
 
@@ -1091,7 +1091,7 @@
   <string name="repo_error_http">Server returned an error (HTTP %1$d)</string>
   <string name="repo_error_invalid_model_list">Could not load a valid model list from this URL</string>
   <string name="repo_error_empty_model_list">This URL does not contain a valid model list</string>
-  <string name="repo_error_newer_version">This repository requires a newer version of OlliteRT</string>
+  <string name="repo_error_newer_version">This repository requires a newer version of 一起瞎折腾</string>
   <string name="repo_error_save_failed">Failed to save repository data to disk</string>
 
   <!-- RepositoryListScreen -->
@@ -1146,8 +1146,8 @@
   <string name="error_storage_insufficient">Insufficient storage to load model (%1$sMB free, need at least %2$sMB). Free up space by deleting unused models or files, then try again.</string>
 
   <!-- ErrorSuggestions: recovery suggestions -->
-  <string name="suggestion_context_overflow">Enable \"Truncate Conversation History\" or \"Trim Prompt\" in OlliteRT Settings → Advanced Settings, or send a shorter prompt.</string>
-  <string name="suggestion_timeout">Increase \"Chat completions timeout\" in OlliteRT Settings → Advanced Settings, send a shorter prompt, or restart the server.</string>
+  <string name="suggestion_context_overflow">Enable \"Truncate Conversation History\" or \"Trim Prompt\" in 一起瞎折腾 Settings → Advanced Settings, or send a shorter prompt.</string>
+  <string name="suggestion_timeout">Increase \"Chat completions timeout\" in 一起瞎折腾 Settings → Advanced Settings, send a shorter prompt, or restart the server.</string>
   <string name="suggestion_model_not_found">Check the Models screen for available downloaded models.</string>
   <string name="suggestion_model_files_missing">The model files may have been deleted. Try re-downloading the model from the Models screen.</string>
   <string name="suggestion_port_bind_failure">The port is already in use by another app. Close the app occupying the port or change the port number in Settings.</string>
@@ -1156,7 +1156,7 @@
   <string name="suggestion_oom">The device ran out of memory. Try closing other apps, using a smaller model, or reducing Max Tokens in Inference Settings.</string>
 
   <!-- CopyUrlReceiver: clipboard label -->
-  <string name="clipboard_label_endpoint">OlliteRT Endpoint</string>
+  <string name="clipboard_label_endpoint">一起瞎折腾 Endpoint</string>
 
   <!-- InferenceRunner: error message -->
   <string name="error_model_init_failed">Model initialization failed: %1$s</string>

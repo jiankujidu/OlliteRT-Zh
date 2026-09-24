@@ -70,7 +70,7 @@
   <string name="repo_list_subheading" translatable="false">管理模型下载所使用的来源。</string>
   <string name="repo_info_button" translatable="false">关于模型来源</string>
   <string name="repo_info_title" translatable="false">关于模型来源</string>
-  <string name="repo_info_body" translatable="false">模型来源提供可供下载的模型列表。OlliteRT 内置一个来源，会自动保持更新。\n\n你可以提供兼容模型列表的 URL 来添加自定义来源。禁用某个来源会将其模型从下载列表中隐藏，但不会删除任何已下载的模型。\n\n出现在多个来源中的模型只显示一次，使用第一个启用的来源。</string>
+  <string name="repo_info_body" translatable="false">模型来源提供可供下载的模型列表。一起瞎折腾 内置一个来源，会自动保持更新。\n\n你可以提供兼容模型列表的 URL 来添加自定义来源。禁用某个来源会将其模型从下载列表中隐藏，但不会删除任何已下载的模型。\n\n出现在多个来源中的模型只显示一次，使用第一个启用的来源。</string>
   <string name="search_models" translatable="false">搜索模型…</string>
   <string name="filter_all" translatable="false">全部</string>
   <string name="filter_downloaded" translatable="false">已下载</string>
@@ -110,7 +110,7 @@
   <string name="cd_help">帮助</string>
 
   <!-- Fork: LLM HTTP 前台服务通知渠道 -->
-  <string name="llm_http_channel_name" translatable="false">OlliteRT 服务</string>
+  <string name="llm_http_channel_name" translatable="false">一起瞎折腾 服务</string>
 
   <!-- 对话框标题与正文 -->
   <string name="dialog_clear_logs_title">删除全部活动日志条目</string>
@@ -199,9 +199,9 @@
   <string name="error_model_rename_failed">重命名模型文件失败</string>
   <string name="dialog_allowlist_conflict_title">名称冲突</string>
   <string name="dialog_allowlist_conflict_body">请重命名模型文件或使用其他名称，以避免与仓库模型冲突。</string>
-  <string name="dialog_donate_title">支持 OlliteRT</string>
-  <string name="dialog_donate_body">如果你觉得 OlliteRT 有用，可以考虑支持它的开发。</string>
-  <string name="dialog_engagement_title">喜欢 OlliteRT 吗？</string>
+  <string name="dialog_donate_title">支持 一起瞎折腾</string>
+  <string name="dialog_donate_body">如果你觉得 一起瞎折腾 有用，可以考虑支持它的开发。</string>
+  <string name="dialog_engagement_title">喜欢 一起瞎折腾 吗？</string>
   <string name="dialog_engagement_body">这个应用由一位独立开发者在业余时间构建和维护。如果它对你有帮助，可以考虑支持它的开发。</string>
   <string name="label_support_development">支持开发</string>
   <string name="label_star_on_github">在 GitHub 上点星</string>
@@ -213,7 +213,7 @@
   <!-- 通知字符串 -->
   <string name="notif_action_stop_server">停止服务</string>
   <string name="notif_action_copy_url">复制 URL</string>
-  <string name="notif_server_running_title">OlliteRT 服务运行中</string>
+  <string name="notif_server_running_title">一起瞎折腾 服务运行中</string>
   <string name="notif_server_body_model">模型：%1$s</string>
   <plurals name="notif_server_body_requests">
     <item quantity="one">请求数：%1$d 次请求</item>
@@ -221,17 +221,17 @@
   </plurals>
   <string name="notif_server_body_url">API URL：%1$s</string>
   <string name="notif_server_body_update">有更新可用：%1$s</string>
-  <string name="notif_starting_title">OlliteRT</string>
+  <string name="notif_starting_title">一起瞎折腾</string>
   <string name="notif_starting_body">正在启动…</string>
   <string name="notif_loading_model_title">正在加载模型：%1$s</string>
   <string name="notif_loading_model_body">请稍候，这可能需要一点时间…</string>
   <string name="notif_model_load_failed_title">模型加载失败</string>
-  <string name="notif_update_available_title">OlliteRT 有更新可用</string>
+  <string name="notif_update_available_title">一起瞎折腾 有更新可用</string>
   <string name="notif_update_available_body">版本 %1$s 已可用</string>
   <string name="notif_cross_channel_title_beta" translatable="false">Beta 频道有新版本</string>
   <string name="notif_cross_channel_title_dev" translatable="false">Dev 频道有新版本</string>
   <string name="notif_cross_channel_title_stable" translatable="false">Stable 频道有新版本</string>
-  <string name="notif_cross_channel_body" translatable="false">OlliteRT v%1$s 已可用</string>
+  <string name="notif_cross_channel_body" translatable="false">一起瞎折腾 v%1$s 已可用</string>
 
   <!-- Toast 消息 -->
   <string name="toast_settings_saved">设置已保存</string>
@@ -269,7 +269,7 @@
   <string name="settings_keep_screen_awake" translatable="false">保持屏幕常亮</string>
   <string name="settings_keep_screen_awake_desc" translatable="false">应用打开时防止屏幕关闭</string>
   <string name="settings_floating_monitor" translatable="false">悬浮监控窗</string>
-  <string name="settings_floating_monitor_desc" translatable="false">当 OlliteRT 在后台时，在其他应用上方显示实时服务指标。需要“显示在其他应用上层”权限</string>
+  <string name="settings_floating_monitor_desc" translatable="false">当 一起瞎折腾 在后台时，在其他应用上方显示实时服务指标。需要“显示在其他应用上层”权限</string>
   <string name="settings_reset_floating_monitor_position" translatable="false">重置悬浮窗位置</string>
   <string name="settings_reset_floating_monitor_position_desc" translatable="false">将其移回默认屏幕位置。</string>
   <string name="toast_floating_monitor_position_reset" translatable="false">悬浮窗位置已重置</string>
@@ -364,8 +364,8 @@
 
   <!-- 设置：检查更新 -->
   <string name="settings_check_for_updates" translatable="false">检查更新</string>
-  <string name="settings_check_for_updates_desc" translatable="false">检查 OlliteRT %1$s 的更新版本。仅检查与你安装频道匹配的发布</string>
-  <string name="settings_check_for_updates_desc_cross_channel" translatable="false">在所有频道（stable、beta、dev）中检查 OlliteRT 的最新版本</string>
+  <string name="settings_check_for_updates_desc" translatable="false">检查 一起瞎折腾 %1$s 的更新版本。仅检查与你安装频道匹配的发布</string>
+  <string name="settings_check_for_updates_desc_cross_channel" translatable="false">在所有频道（stable、beta、dev）中检查 一起瞎折腾 的最新版本</string>
   <string name="settings_update_available" translatable="false">有新版本可用：%1$s</string>
   <string name="settings_download_version" translatable="false">下载 %1$s</string>
   <string name="settings_check_now_tooltip" translatable="false">立即检查</string>
@@ -416,7 +416,7 @@
   <string name="settings_ha_transcription_prompt_placeholder" translatable="false">留空将使用默认提示词</string>
   <string name="settings_ha_config_preview" translatable="false">根据你的当前 IP（%1$s）、端口（%2$d）%3$s 生成 configuration.yaml 片段</string>
   <string name="settings_ha_config_preview_token_suffix" translatable="false">以及 Bearer 令牌</string>
-  <string name="settings_ha_loopback_warning" translatable="false">当服务仅监听本设备时，Home Assistant 无法访问 OlliteRT。请选择局域网或可达的自定义地址</string>
+  <string name="settings_ha_loopback_warning" translatable="false">当服务仅监听本设备时，Home Assistant 无法访问 一起瞎折腾。请选择局域网或可达的自定义地址</string>
   <string name="settings_ha_copy_config" translatable="false">复制配置</string>
 
   <!-- 设置：上下文管理卡片 -->
@@ -488,7 +488,7 @@
   <string name="settings_donate" translatable="false">捐赠</string>
   <string name="settings_licenses" translatable="false">开源许可</string>
   <string name="settings_privacy_policy" translatable="false">隐私政策</string>
-  <string name="settings_version_footer" translatable="false">OlliteRT v%1$s（%2$s）</string>
+  <string name="settings_version_footer" translatable="false">一起瞎折腾 v%1$s（%2$s）</string>
 
   <!-- 状态界面标签 -->
 
@@ -777,7 +777,7 @@
   <string name="logs_error_kind_inference_error" translatable="false">推理错误</string>
 
   <!-- LogClipboardExport -->
-  <string name="logs_export_chooser_title" translatable="false">导出 OlliteRT 日志</string>
+  <string name="logs_export_chooser_title" translatable="false">导出 一起瞎折腾 日志</string>
 
   <!-- 模型界面、导航与通用 UI 标签 -->
 
@@ -792,9 +792,9 @@
 
   <!-- 顶栏 -->
   <string name="topbar_back" translatable="false">返回</string>
-  <string name="topbar_brand_dev" translatable="false">OlliteRT Dev</string>
-  <string name="topbar_brand_beta" translatable="false">OlliteRT Beta</string>
-  <string name="topbar_brand" translatable="false">OlliteRT</string>
+  <string name="topbar_brand_dev" translatable="false">一起瞎折腾 开发版</string>
+  <string name="topbar_brand_beta" translatable="false">一起瞎折腾 测试版</string>
+  <string name="topbar_brand" translatable="false">一起瞎折腾</string>
   <string name="topbar_settings" translatable="false">设置</string>
 
   <!-- 状态胶囊标签 -->
@@ -906,7 +906,7 @@
 
   <!-- UpdateCheckWorker：通知渠道（在 Android 系统通知设置中可见） -->
   <string name="notif_channel_app_update_name" translatable="false">应用更新</string>
-  <string name="notif_channel_app_update_desc" translatable="false">OlliteRT 有新版本时通知</string>
+  <string name="notif_channel_app_update_desc" translatable="false">一起瞎折腾 有新版本时通知</string>
   <string name="notif_channel_beta_release_name" translatable="false">Beta 发布</string>
   <string name="notif_channel_beta_release_desc" translatable="false">关于其他频道新 Beta 发布的通知。</string>
   <string name="notif_channel_dev_release_name" translatable="false">Dev 发布</string>
@@ -1033,9 +1033,9 @@
   <string name="validation_cors_invalid">无效的 CORS 来源 —— 使用 *、留空，或以逗号分隔、带 http(s):// 的 URL</string>
 
   <!-- DownloadRepository：通知渠道 -->
-  <string name="notif_channel_download_name" translatable="false">OlliteRT 下载通知</string>
+  <string name="notif_channel_download_name" translatable="false">一起瞎折腾 下载通知</string>
 
-  <!-- OlliteRTApp：服务错误对话框 -->
+  <!-- 一起瞎折腾App：服务错误对话框 -->
   <string name="dialog_server_error_title">服务错误</string>
   <string name="view_logs">查看日志</string>
 
@@ -1089,7 +1089,7 @@
   <string name="repo_error_http">服务器返回错误（HTTP %1$d）</string>
   <string name="repo_error_invalid_model_list">无法从此 URL 加载有效的模型列表</string>
   <string name="repo_error_empty_model_list">此 URL 不包含有效的模型列表</string>
-  <string name="repo_error_newer_version">该仓库需要更新的 OlliteRT 版本</string>
+  <string name="repo_error_newer_version">该仓库需要更新的 一起瞎折腾 版本</string>
   <string name="repo_error_save_failed">将仓库数据保存到磁盘失败</string>
 
   <!-- RepositoryListScreen -->
@@ -1144,8 +1144,8 @@
   <string name="error_storage_insufficient">存储空间不足以加载模型（可用 %1$sMB，至少需要 %2$sMB）。请通过删除不用的模型或文件释放空间，然后重试。</string>
 
   <!-- ErrorSuggestions：恢复建议 -->
-  <string name="suggestion_context_overflow">在 OlliteRT 设置 → 高级设置 中启用“截断对话历史”或“截断提示词”，或发送更短的提示词。</string>
-  <string name="suggestion_timeout">在 OlliteRT 设置 → 高级设置 中增大“对话补全超时”，发送更短的提示词，或重启服务。</string>
+  <string name="suggestion_context_overflow">在 一起瞎折腾 设置 → 高级设置 中启用“截断对话历史”或“截断提示词”，或发送更短的提示词。</string>
+  <string name="suggestion_timeout">在 一起瞎折腾 设置 → 高级设置 中增大“对话补全超时”，发送更短的提示词，或重启服务。</string>
   <string name="suggestion_model_not_found">请在模型界面查看可用的已下载模型。</string>
   <string name="suggestion_model_files_missing">模型文件可能已被删除。请尝试从模型界面重新下载模型。</string>
   <string name="suggestion_port_bind_failure">该端口已被另一个应用占用。请关闭占用该端口的应用，或在设置中更改端口号。</string>
@@ -1154,7 +1154,7 @@
   <string name="suggestion_oom">设备内存不足。请尝试关闭其他应用、使用更小的模型，或在推理设置中减小最大 Token。</string>
 
   <!-- CopyUrlReceiver：剪贴板标签 -->
-  <string name="clipboard_label_endpoint">OlliteRT 端点</string>
+  <string name="clipboard_label_endpoint">一起瞎折腾 端点</string>
 
   <!-- InferenceRunner：错误消息 -->
   <string name="error_model_init_failed">模型初始化失败：%1$s</string>
