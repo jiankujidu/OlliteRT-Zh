@@ -87,6 +87,6 @@ object GitHubConfig {
    * 设置页「项目主页」入口、README 均指向此处。
    * 注意：新建 GitHub 仓库前此处为占位，仓库创建后替换为真实地址。
    */
-  const val PROJECT_GITHUB_URL = "https://github.com/PLACEHOLDER_OWNER/OlliteRT-Zh"
+  const val PROJECT_GITHUB_URL = "https://github.com/aeroheaven1/OlliteRT-Zh"
 
 }
