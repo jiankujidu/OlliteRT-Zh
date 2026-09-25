@@ -17,36 +17,29 @@
 package com.ollitert.llm.server.ui.chat
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.imePadding
-import androidx.compose.foundation.layout.navigationBarsPadding
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.Send
-import androidx.compose.material.icons.outlined.DeleteSweep
-import androidx.compose.material3.Button
+import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Button
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberDrawerState
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.Send
+import androidx.compose.material.icons.outlined.Add
+import androidx.compose.material.icons.outlined.Close
+import androidx.compose.material.icons.outlined.Menu
+import androidx.compose.material.icons.outlined.Stop
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -56,195 +49,19 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.ollitert.llm.server.ui.theme.OlliteRTPrimary
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.contentOrNull
-import kotlinx.serialization.json.jsonArray
-import kotlinx.serialization.json.jsonObject
-import java.net.HttpURLConnection
-import java.net.URL
-
-enum class ChatRole(val wire: String) {
-  USER("user"),
-  ASSISTANT("assistant"),
-}
-
-data class ChatMessage(
-  val role: ChatRole,
-  val content: String,
-  val streaming: Boolean = false,
-)
 
 /**
- * In-process chat history. Kept as a singleton so leaving and re-entering the
- * chat screen does not lose the conversation.
- */
-object ChatStore {
-  val messages = mutableStateListOf<ChatMessage>()
-
-  fun clear() {
-    messages.clear()
-  }
-}
-
-private val chatJson = Json {
-  ignoreUnknownKeys = true
-  isLenient = true
-}
-
-/** Hides `<think>` reasoning blocks, including the still-open one while streaming. */
-internal fun displayedText(raw: String): String {
-  var s = raw.replace(Regex("(?s)<think>.*?</think>"), "")
-  val open = s.indexOf("<think>")
-  if (open >= 0) s = s.substring(0, open)
-  return s.trim()
-}
-
-/** Snapshots one SSE stream from a single host, forwarding text deltas. */
-private fun streamOnce(
-  host: String,
-  port: Int,
-  bearerToken: String,
-  body: String,
-  onDelta: (String) -> Unit,
-) {
-  val url = URL("http://$host:$port/v1/chat/completions")
-  val conn = (url.openConnection() as HttpURLConnection).apply {
-    requestMethod = "POST"
-    doOutput = true
-    connectTimeout = 8_000
-    readTimeout = 0
-    setRequestProperty("Content-Type", "application/json")
-    setRequestProperty("Accept", "text/event-stream")
-    if (bearerToken.isNotBlank()) {
-      setRequestProperty("Authorization", "Bearer $bearerToken")
-    }
-  }
-  try {
-    conn.outputStream.use { it.write(body.toByteArray(Charsets.UTF_8)) }
-
-    val code = conn.responseCode
-    if (code !in 200..299) {
-      val err = (conn.errorStream ?: conn.inputStream)
-        ?.bufferedReader()?.use { it.readText() }.orEmpty()
-      throw IllegalStateException("服务返回 $code ${err.take(300)}")
-    }
-
-    conn.inputStream.bufferedReader().use { reader ->
-      while (true) {
-        val line = reader.readLine() ?: break
-        if (line.isEmpty() || !line.startsWith("data:")) continue
-        val payload = line.removePrefix("data:").trim()
-        if (payload == "[DONE]") break
-        val delta = extractDelta(payload)
-        if (!delta.isNullOrEmpty()) onDelta(delta)
-      }
-    }
-  } finally {
-    runCatching { conn.disconnect() }
-  }
-}
-
-/**
- * Streams a chat completion from the on-device server, emitting text deltas.
+ * Hosts the in-app chat. Talks to the locally running model over the loopback API.
  *
- * [hosts] is tried in order. Falling back is only safe before the first delta:
- * a request that already produced output must never be replayed, or the reply
- * would be duplicated.
+ * Conversations and projects are persisted via [ChatViewModel] (Room), so the tree
+ * survives app restarts. Generation can be force-stopped at any time via the send
+ * button (which becomes a stop button while streaming) — [ChatViewModel.stop]
+ * cancels the coroutine AND disconnects the open HTTP connection.
  */
-private fun streamChatCompletion(
-  hosts: List<String>,
-  port: Int,
-  bearerToken: String,
-  modelName: String?,
-  history: List<Pair<String, String>>,
-): Flow<String> = channelFlow {
-  withContext(Dispatchers.IO) {
-    val body = buildString {
-      append("{\"model\":")
-      append(JsonPrimitive(modelName ?: "default").toString())
-      append(",\"stream\":true,\"messages\":[")
-      history.forEachIndexed { i, (role, content) ->
-        if (i > 0) append(',')
-        append("{\"role\":")
-        append(JsonPrimitive(role).toString())
-        append(",\"content\":")
-        append(JsonPrimitive(content).toString())
-        append('}')
-      }
-      append("]}")
-    }
-
-    var lastError: Exception? = null
-    for (host in hosts) {
-      var emitted = false
-      try {
-        streamOnce(host, port, bearerToken, body) { delta ->
-          emitted = true
-          trySend(delta)
-        }
-        return@withContext
-      } catch (e: Exception) {
-        // Reaching the server but getting an error back means the host is
-        // right — trying the next one would only repeat the same request.
-        if (emitted || e is IllegalStateException) throw e
-        lastError = e
-      }
-    }
-    throw lastError ?: IllegalStateException("无法连接本地模型服务")
-  }
-}
-
-private fun extractDelta(payload: String): String? = try {
-  val choices = chatJson.parseToJsonElement(payload).jsonObject["choices"]?.jsonArray
-  val first = choices?.firstOrNull()?.jsonObject
-  val delta = first?.get("delta")?.jsonObject
-  val content = delta?.get("content") as? JsonPrimitive
-  content?.contentOrNull
-} catch (_: Exception) {
-  null
-}
-
-/**
- * Hosts the in-app chat should try, best first.
- *
- * [bindAddress] is the *advertised* address (the LAN IP shown to the user), not
- * the socket's bind address, so it can be unreachable from the app itself — an
- * AP-isolated Wi-Fi or a firewall rule is enough. Loopback always works when
- * the server listens on 0.0.0.0 or 127.0.0.1, so it goes first and the
- * advertised address stays as a fallback for custom-IP bindings.
- */
-fun chatConnectHosts(bindAddress: String?): List<String> {
-  val advertised = bindAddress?.trim().orEmpty()
-  return when (advertised) {
-    "", "localhost", "0.0.0.0", "127.0.0.1" -> listOf("127.0.0.1")
-    else -> listOf("127.0.0.1", advertised)
-  }
-}
-
-/** Rewrites the raw socket/HTTP failures into something a user can act on. */
-internal fun friendlyChatError(e: Exception, port: Int): String {
-  val raw = e.message.orEmpty()
-  return when {
-    raw.contains("Cleartext", ignoreCase = true) ||
-      raw.contains("not permitted", ignoreCase = true) ->
-      "系统拦截了明文 HTTP 请求，请确认已安装最新版本。"
-    e is java.net.ConnectException || raw.contains("refused", ignoreCase = true) ||
-      raw.contains("ECONNREFUSED", ignoreCase = true) ->
-      "连不上本地服务（端口 $port），请确认模型已启动。"
-    e is java.net.SocketTimeoutException || raw.contains("timeout", ignoreCase = true) ->
-      "连接超时，模型可能还在加载，稍后再试。"
-    raw.isBlank() -> "请求失败：${e.javaClass.simpleName}"
-    else -> raw
-  }
-}
-
 @Composable
 fun ChatScreen(
   hosts: List<String>,
@@ -253,218 +70,223 @@ fun ChatScreen(
   serverRunning: Boolean,
   activeModelName: String?,
   onOpenModels: () -> Unit,
+  viewModel: ChatViewModel = hiltViewModel(),
 ) {
   val scope = rememberCoroutineScope()
-  val listState = rememberLazyListState()
-  val messages = ChatStore.messages
+  val drawerState = rememberDrawerState(DrawerValue.Closed)
+
+  LaunchedEffect(hosts, port, bearerToken, serverRunning, activeModelName) {
+    viewModel.configure(hosts, port, bearerToken, serverRunning, activeModelName)
+  }
+
+  val projects by viewModel.projectsWithConversations.collectAsStateWithLifecycle(emptyList())
+  val currentProjectId by viewModel.currentProjectId.collectAsStateWithLifecycle(null)
+  val currentConvId by viewModel.currentConversationId.collectAsStateWithLifecycle(null)
+  val messages by viewModel.currentMessages.collectAsStateWithLifecycle(emptyList())
+  val isGenerating by viewModel.isGenerating.collectAsStateWithLifecycle(false)
+  val errorText by viewModel.errorText.collectAsStateWithLifecycle(null)
 
   var input by remember { mutableStateOf("") }
-  var streaming by remember { mutableStateOf(false) }
-  var errorText by remember { mutableStateOf<String?>(null) }
+  val listState = rememberLazyListState()
 
-  // Follow the newest message (and grow with streaming text).
   LaunchedEffect(messages.size, messages.lastOrNull()?.content?.length) {
     if (messages.isNotEmpty()) {
       runCatching { listState.scrollToItem(messages.lastIndex) }
     }
   }
 
-  fun send() {
-    val text = input.trim()
-    if (text.isEmpty() || streaming) return
-    if (!serverRunning) {
-      errorText = "模型服务未运行，先去「模型」页启动一个模型。"
-      return
-    }
-    input = ""
-    errorText = null
-
-    val history = messages
-      .filter { it.content.isNotBlank() }
-      .map { it.role.wire to displayedText(it.content).ifBlank { it.content } }
-      .toMutableList()
-    history += "user" to text
-
-    messages += ChatMessage(ChatRole.USER, text)
-    val idx = messages.size
-    messages += ChatMessage(ChatRole.ASSISTANT, "", streaming = true)
-    streaming = true
-
-    scope.launch {
-      try {
-        streamChatCompletion(hosts, port, bearerToken, activeModelName, history).collect { delta ->
-          if (idx < messages.size) {
-            val cur = messages[idx]
-            messages[idx] = cur.copy(content = cur.content + delta)
-          }
-        }
-      } catch (e: Exception) {
-        errorText = friendlyChatError(e, port)
-        // Keep a partial reply that already made it to screen; drop the empty
-        // placeholder so no blank bubble is left behind.
-        if (idx < messages.size && messages[idx].content.isBlank()) messages.removeAt(idx)
-      } finally {
-        if (idx < messages.size) messages[idx] = messages[idx].copy(streaming = false)
-        streaming = false
-      }
-    }
-  }
-
-  Column(
-    modifier = Modifier
-      .fillMaxSize()
-      .imePadding()
-      .navigationBarsPadding(),
+  ModalNavigationDrawer(
+    drawerState = drawerState,
+    drawerContent = {
+      ChatSidebar(
+        projects = projects,
+        currentProjectId = currentProjectId,
+        currentConversationId = currentConvId,
+        onSelectConversation = { id ->
+          viewModel.stop()
+          viewModel.selectConversation(id)
+        },
+        onNewConversation = {
+          scope.launch { drawerState.close() }
+          viewModel.newConversation()
+        },
+        onNewProject = { name -> viewModel.newProject(name) },
+        onDeleteConversation = viewModel::deleteConversation,
+        onDeleteProject = viewModel::deleteProject,
+        onClose = { scope.launch { drawerState.close() } },
+      )
+    },
   ) {
-    // ── header: model name + clear ─────────────────────────────────────────
-    Row(
-      modifier = Modifier
-        .fillMaxWidth()
-        .padding(start = 16.dp, end = 8.dp, top = 4.dp, bottom = 4.dp),
-      verticalAlignment = Alignment.CenterVertically,
+    Column(
+      Modifier
+        .fillMaxSize()
+        .imePadding()
+        .navigationBarsPadding(),
     ) {
-      Text(
-        text = activeModelName ?: "未加载模型",
-        style = MaterialTheme.typography.labelMedium,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-        maxLines = 1,
-        modifier = Modifier.weight(1f),
-      )
-      if (messages.isNotEmpty()) {
-        TextButton(onClick = { ChatStore.clear(); errorText = null }) {
-          Icon(
-            imageVector = Icons.Outlined.DeleteSweep,
-            contentDescription = null,
-            modifier = Modifier.height(16.dp),
-          )
-          Spacer(modifier = Modifier.height(4.dp))
-          Text("清空", style = MaterialTheme.typography.labelMedium)
+      // ── header: drawer toggle + model name + new conversation ──
+      Row(
+        Modifier
+          .fillMaxWidth()
+          .padding(start = 8.dp, end = 8.dp, top = 4.dp, bottom = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+      ) {
+        IconButton(onClick = { scope.launch { drawerState.open() } }) {
+          Icon(Icons.Outlined.Menu, contentDescription = "对话列表")
+        }
+        Text(
+          text = if (isGenerating) "生成中…" else (activeModelName ?: "未加载模型"),
+          style = MaterialTheme.typography.labelMedium,
+          color = MaterialTheme.colorScheme.onSurfaceVariant,
+          maxLines = 1,
+          modifier = Modifier.weight(1f),
+        )
+        IconButton(onClick = { viewModel.newConversation() }) {
+          Icon(Icons.Outlined.Add, contentDescription = "新建对话")
         }
       }
-    }
 
-    // ── messages ───────────────────────────────────────────────────────────
-    LazyColumn(
-      state = listState,
-      modifier = Modifier
-        .weight(1f)
-        .fillMaxWidth(),
-      contentPadding = androidx.compose.foundation.layout.PaddingValues(
-        horizontal = 14.dp,
-        vertical = 8.dp,
-      ),
-      verticalArrangement = Arrangement.spacedBy(10.dp),
-    ) {
-      if (messages.isEmpty()) {
-        item {
-          Text(
-            text = if (serverRunning) {
-              "直接在这里向本地模型提问吧。\n（模型在手机上离线运行，不联网）"
-            } else {
-              "还没有运行模型。先去「模型」页启动一个模型，再回来对话。"
-            },
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(top = 24.dp),
-          )
+      // ── messages ──
+      LazyColumn(
+        state = listState,
+        modifier = Modifier.weight(1f).fillMaxWidth(),
+        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp),
+      ) {
+        if (messages.isEmpty()) {
+          item { ChatEmptyState(serverRunning, onOpenModels) }
         }
-        if (!serverRunning) {
-          item {
-            Button(onClick = onOpenModels, shape = RoundedCornerShape(50)) {
-              Text("去启动模型")
-            }
+        items(messages, key = { it.id }) { msg ->
+          MessageRow(msg, onRegenerate = viewModel::regenerate)
+        }
+      }
+
+      errorText?.let { err ->
+        Row(
+          Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 4.dp)
+            .background(
+              MaterialTheme.colorScheme.errorContainer,
+              RoundedCornerShape(10.dp),
+            ).padding(10.dp),
+          verticalAlignment = Alignment.CenterVertically,
+        ) {
+          Text(
+            err,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onErrorContainer,
+            modifier = Modifier.weight(1f),
+          )
+          IconButton(
+            onClick = viewModel::clearError,
+            modifier = Modifier.size(20.dp),
+          ) {
+            Icon(
+              Icons.Outlined.Close,
+              contentDescription = "关闭",
+              Modifier.size(16.dp),
+              tint = MaterialTheme.colorScheme.onErrorContainer,
+            )
           }
         }
       }
-      itemsIndexed(messages) { _, msg ->
-        MessageBubble(msg)
-      }
-    }
 
-    errorText?.let { err ->
-      Text(
-        text = err,
-        style = MaterialTheme.typography.bodySmall,
-        color = MaterialTheme.colorScheme.error,
-        modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
-      )
-    }
-
-    // ── input ──────────────────────────────────────────────────────────────
-    Row(
-      modifier = Modifier
-        .fillMaxWidth()
-        .padding(horizontal = 12.dp, vertical = 10.dp),
-      verticalAlignment = Alignment.CenterVertically,
-      horizontalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-      OutlinedTextField(
-        value = input,
-        onValueChange = { input = it },
-        modifier = Modifier.weight(1f),
-        placeholder = { Text("问点什么…") },
-        maxLines = 4,
-        shape = RoundedCornerShape(16.dp),
-      )
-      IconButton(
-        onClick = { send() },
-        enabled = input.isNotBlank() && !streaming,
-        modifier = Modifier
-          .clip(RoundedCornerShape(50))
-          .background(
-            if (input.isNotBlank() && !streaming) OlliteRTPrimary.copy(alpha = 0.20f)
-            else MaterialTheme.colorScheme.surfaceContainerHigh,
-          ),
+      // ── input: send button becomes a forced-stop button while streaming ──
+      Row(
+        Modifier
+          .fillMaxWidth()
+          .padding(horizontal = 12.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
       ) {
-        Icon(
-          imageVector = Icons.AutoMirrored.Outlined.Send,
-          contentDescription = "发送",
-          tint = OlliteRTPrimary,
+        OutlinedTextField(
+          value = input,
+          onValueChange = { input = it },
+          modifier = Modifier.weight(1f),
+          placeholder = { Text("问点什么…") },
+          maxLines = 4,
+          shape = RoundedCornerShape(16.dp),
         )
+        IconButton(
+          onClick = {
+            if (isGenerating) {
+              viewModel.stop()
+            } else {
+              viewModel.send(input)
+              input = ""
+            }
+          },
+          enabled = isGenerating || input.isNotBlank(),
+          modifier =
+            Modifier
+              .clip(RoundedCornerShape(50))
+              .background(
+                if (isGenerating) {
+                  MaterialTheme.colorScheme.error.copy(alpha = 0.16f)
+                } else if (input.isNotBlank()) {
+                  OlliteRTPrimary.copy(alpha = 0.20f)
+                } else {
+                  MaterialTheme.colorScheme.surfaceContainerHigh
+                },
+              ),
+        ) {
+          Icon(
+            if (isGenerating) Icons.Outlined.Stop else Icons.AutoMirrored.Outlined.Send,
+            contentDescription = if (isGenerating) "停止生成" else "发送",
+            tint =
+              if (isGenerating) {
+                MaterialTheme.colorScheme.error
+              } else {
+                OlliteRTPrimary
+              },
+          )
+        }
       }
     }
   }
 }
 
 @Composable
-private fun MessageBubble(msg: ChatMessage) {
-  val isUser = msg.role == ChatRole.USER
-  val shown = if (isUser) msg.content else displayedText(msg.content)
-  val body = when {
-    shown.isNotBlank() -> shown
-    msg.streaming -> "思考中…"
-    else -> "…"
-  }
-  Row(
-    modifier = Modifier.fillMaxWidth(),
-    horizontalArrangement = if (isUser) Arrangement.End else Arrangement.Start,
+private fun ChatEmptyState(
+  serverRunning: Boolean,
+  onOpenModels: () -> Unit,
+) {
+  Column(
+    Modifier
+      .fillMaxWidth()
+      .padding(top = 24.dp, start = 16.dp, end = 16.dp),
   ) {
-    Box(
-      modifier = Modifier
-        .widthIn(max = 320.dp)
-        .clip(RoundedCornerShape(16.dp))
-        .background(
-          if (isUser) OlliteRTPrimary.copy(alpha = 0.18f)
-          else MaterialTheme.colorScheme.surfaceContainerHigh,
-        )
-        .padding(horizontal = 13.dp, vertical = 10.dp),
-    ) {
-      Column {
-        if (!isUser) {
-          Text(
-            text = "助手",
-            style = MaterialTheme.typography.labelSmall,
-            color = OlliteRTPrimary,
-            fontWeight = FontWeight.SemiBold,
-          )
-          Spacer(modifier = Modifier.height(3.dp))
-        }
-        Text(
-          text = body,
-          style = MaterialTheme.typography.bodyMedium,
-          color = MaterialTheme.colorScheme.onSurface,
-        )
+    Text(
+      text =
+        if (serverRunning) {
+          "直接在这里向本地模型提问吧。\n（模型在手机上离线运行，不联网）"
+        } else {
+          "还没有运行模型。先去「模型」页启动一个模型，再回来对话。"
+        },
+      style = MaterialTheme.typography.bodyMedium,
+      color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+    if (!serverRunning) {
+      Spacer(Modifier.size(12.dp))
+      Button(onClick = onOpenModels, shape = RoundedCornerShape(50)) {
+        Text("去启动模型")
       }
     }
+  }
+}
+
+/**
+ * Hosts the chat should try, best first.
+ *
+ * [bindAddress] is the *advertised* address (the LAN IP shown to the user), not
+ * the socket's bind address, so it can be unreachable from the app itself.
+ * Loopback always works when the server listens on 0.0.0.0 or 127.0.0.1, so it
+ * goes first and the advertised address stays as a fallback.
+ */
+fun chatConnectHosts(bindAddress: String?): List<String> {
+  val advertised = bindAddress?.trim().orEmpty()
+  return when (advertised) {
+    "", "localhost", "0.0.0.0", "127.0.0.1" -> listOf("127.0.0.1")
+    else -> listOf("127.0.0.1", advertised)
   }
 }
