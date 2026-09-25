@@ -1,0 +1,145 @@
+name: 问题反馈
+description: 反馈崩溃、Bug 或异常行为
+labels: ["bug"]
+body:
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: 提交前确认
+      options:
+        - label: 我使用的是最新版本（或能在最新版本上复现）
+          required: true
+        - label: 我已搜索过现有 Issue，确认没有重复
+          required: true
+
+  - type: markdown
+    attributes:
+      value: "## 分类"
+
+  - type: dropdown
+    id: category
+    attributes:
+      label: 问题类型
+      options:
+        - 应用崩溃
+        - 模型加载失败
+        - 服务 / 网络（连接、端口、CORS、鉴权）
+        - 模型下载
+        - API 兼容性（OpenAI 接口格式不一致）
+        - 界面显示
+        - 第三方集成（Open WebUI、Home Assistant 等）
+        - 设置相关
+        - 其他
+    validations:
+      required: true
+
+  - type: dropdown
+    id: flavor
+    attributes:
+      label: 应用渠道包
+      description: 你使用的是哪个构建版本？
+      options:
+        - stable（正式版）
+        - beta（测试版）
+        - dev（开发版）
+    validations:
+      required: true
+
+  - type: markdown
+    attributes:
+      value: "## 问题描述"
+
+  - type: textarea
+    id: description
+    attributes:
+      label: 问题简述
+      description: 清晰、简洁地描述遇到了什么问题。
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: 复现步骤
+      placeholder: |
+        1. 打开应用
+        2. 进入「……」
+        3. 点击「……」
+        4. 出现问题
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: 期望结果
+      description: 你原本期望发生什么？
+    validations:
+      required: true
+
+  - type: markdown
+    attributes:
+      value: "## 运行环境"
+
+  - type: textarea
+    id: device-info
+    attributes:
+      label: 设备与应用信息
+      description: >-
+        如果你是通过应用内「设置 → 提交反馈」按钮跳转过来的，这里会自动填好；
+        否则请手动填写。
+      placeholder: |
+        - 应用版本：v___（例如 v0.9.6）
+        - 设备：[厂商] [型号]（例如 Xiaomi 14 Pro）
+        - 系统：[Android 版本]（例如 Android 14）
+        - 使用的模型：[模型名称]（例如 Gemma-3-1B-it）
+    validations:
+      required: true
+
+  - type: markdown
+    attributes:
+      value: "## 附加信息"
+
+  - type: markdown
+    attributes:
+      value: |
+        ### 调试日志
+        如果是崩溃、模型加载失败、启动问题或设置相关问题：
+        1. 进入 **设置 → 开发者**
+        2. 打开 **详细调试模式** 并保存
+        3. 复现该问题
+        4. 回到 **设置 → 开发者**，点击 **导出调试日志**（分享图标）
+        5. 把导出的文本文件粘贴到下方
+
+        > **提示**：导出内容包含当前设置快照，其中 Token 等敏感信息已自动打码。
+
+  - type: textarea
+    id: debug-logs
+    attributes:
+      label: 调试日志
+      description: >-
+        粘贴「设置 → 开发者 → 导出调试日志」得到的内容。
+
+  - type: markdown
+    attributes:
+      value: |
+        ### 请求 / 响应日志
+        如果是 API 问题、返回内容异常或工具调用问题：
+        1. 复现该问题
+        2. 进入 **日志** 标签页
+        3. 点击工具栏的 **导出**（分享图标）
+        4. 把导出的 JSON 文件粘贴到下方
+
+  - type: textarea
+    id: request-logs
+    attributes:
+      label: 请求 / 响应日志
+      description: >-
+        粘贴「日志」页导出得到的 JSON 内容。
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: 其他补充
+      description: >-
+        截图、录屏、尝试过的解决办法、发生频率、连接的客户端、改动过的设置等，任何可能有帮助的信息。
