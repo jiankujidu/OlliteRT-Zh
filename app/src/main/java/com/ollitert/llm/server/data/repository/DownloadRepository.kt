@@ -290,7 +290,7 @@ class DownloadRepository @Inject constructor(
 
     val builder =
       NotificationCompat.Builder(context, channelId)
-        .setSmallIcon(R.mipmap.ic_launcher_monochrome)
+        .setSmallIcon(R.mipmap.ic_launcher)
         .setContentTitle(title)
         .setContentText(text)
         .setPriority(NotificationCompat.PRIORITY_HIGH)

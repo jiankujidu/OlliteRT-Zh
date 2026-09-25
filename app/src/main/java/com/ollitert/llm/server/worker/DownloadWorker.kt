@@ -504,7 +504,7 @@ class DownloadWorker(context: Context, params: WorkerParameters) :
       NotificationCompat.Builder(applicationContext, FOREGROUND_NOTIFICATION_CHANNEL_ID)
         .setContentTitle(title)
         .setContentText(content)
-        .setSmallIcon(R.mipmap.ic_launcher_monochrome)
+        .setSmallIcon(R.mipmap.ic_launcher)
         .setOngoing(true) // Makes the notification non-dismissable
         .setProgress(100, progress, false) // Show progress
         .setContentIntent(pendingIntent)

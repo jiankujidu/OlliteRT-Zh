@@ -506,7 +506,7 @@ private fun RepositoryRow(
 private fun RepoIcon(repo: Repository, modifier: Modifier = Modifier) {
   if (repo.isBuiltIn) {
     Image(
-      painter = painterResource(R.mipmap.ic_launcher_foreground),
+      painter = painterResource(R.mipmap.ic_launcher),
       contentDescription = null,
       modifier = modifier.clip(CircleShape),
     )

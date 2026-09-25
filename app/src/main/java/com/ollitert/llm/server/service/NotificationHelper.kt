@@ -79,7 +79,7 @@ object NotificationHelper {
       .setContentTitle(title)
       .setContentText(text)
       .setStyle(NotificationCompat.BigTextStyle().bigText(text))
-      .setSmallIcon(R.mipmap.ic_launcher_monochrome)
+      .setSmallIcon(R.mipmap.ic_launcher)
       .setContentIntent(contentIntent)
       .setOngoing(true)
     if (stopIntent != null) {

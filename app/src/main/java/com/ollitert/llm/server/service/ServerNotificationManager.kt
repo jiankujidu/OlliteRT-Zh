@@ -236,7 +236,7 @@ class ServerNotificationManager(private val context: Context) {
       else
         context.getString(R.string.notif_corruption_text_many, corrupted.size, names)
       val notification = NotificationCompat.Builder(context, channelId)
-        .setSmallIcon(R.mipmap.ic_launcher_monochrome)
+        .setSmallIcon(R.mipmap.ic_launcher)
         .setContentTitle(context.getString(R.string.notif_corruption_title))
         .setContentText(text)
         .setStyle(NotificationCompat.BigTextStyle().bigText(text))

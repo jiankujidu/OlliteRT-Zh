@@ -157,7 +157,7 @@ class AllowlistRefreshWorker @AssistedInject constructor(
     val notification = NotificationCompat.Builder(context, MODEL_UPDATE_CHANNEL_ID)
       .setContentTitle(context.getString(R.string.notif_model_update_title))
       .setContentText(context.getString(R.string.notif_model_update_text, displayName))
-      .setSmallIcon(R.mipmap.ic_launcher_monochrome)
+      .setSmallIcon(R.mipmap.ic_launcher)
       .setContentIntent(pendingIntent)
       .setAutoCancel(true)
       .build()
