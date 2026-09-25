@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+ v942：自适应图标。
+ background 使用纯透明色 —— 系统不再自动补白底，直接透出壁纸/主题底色。
+ foreground = 新版 LOGO 贴纸（内容收在中心 64%，安全区 66.7% 以内，任何形状都不裁）。
+ monochrome = 纯白剪影，Android 13+ 开启「主题图标」时由系统按壁纸主题色自动着色。
+-->
+<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+    <background android:drawable="@color/ic_launcher_background" />
+    <foreground android:drawable="@mipmap/ic_launcher_foreground" />
+    <monochrome android:drawable="@mipmap/ic_launcher_monochrome" />
+</adaptive-icon>
