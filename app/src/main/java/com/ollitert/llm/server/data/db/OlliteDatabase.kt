@@ -16,22 +16,30 @@
 
 package com.ollitert.llm.server.data.db
 
+import androidx.room.AutoMigration
 import androidx.room.Database
 import androidx.room.RoomDatabase
 
 /**
  * Room database for OlliteRT local data.
  *
- * Currently stores persisted request logs only. Uses [AutoMigration] avoidance via
- * hybrid schema — the [RequestLogEntity.extras] JSON column absorbs new fields
- * without schema changes. [fallbackToDestructiveMigration] on the builder is a
- * safety net: losing log history is acceptable if indexed columns ever change.
+ * Stores persisted request logs and, since v2, the in-app chat tree
+ * (projects → conversations → messages). The v1→v2 migration only *adds*
+ * new tables, so [AutoMigration] handles it without touching request logs.
+ * [fallbackToDestructiveMigration] stays as a safety net.
  */
 @Database(
-  entities = [RequestLogEntity::class],
-  version = 1,
+  entities = [
+    RequestLogEntity::class,
+    ChatProjectEntity::class,
+    ChatConversationEntity::class,
+    ChatMessageEntity::class,
+  ],
+  version = 2,
   exportSchema = true,
+  autoMigrations = [AutoMigration(from = 1, to = 2)],
 )
 abstract class OlliteDatabase : RoomDatabase() {
   abstract fun requestLogDao(): RequestLogDao
+  abstract fun chatDao(): ChatDao
 }
