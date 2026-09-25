@@ -18,6 +18,7 @@ package com.ollitert.llm.server.di
 
 import android.content.Context
 import androidx.room.Room
+import com.ollitert.llm.server.data.db.ChatDao
 import com.ollitert.llm.server.data.db.OlliteDatabase
 import com.ollitert.llm.server.data.db.RequestLogDao
 import com.ollitert.llm.server.data.repository.RequestLogRepository
@@ -37,11 +38,14 @@ object DatabaseModule {
   @Singleton
   fun provideDatabase(@ApplicationContext context: Context): OlliteDatabase =
     Room.databaseBuilder(context, OlliteDatabase::class.java, "ollite.db")
-      .fallbackToDestructiveMigration(dropAllTables = true) // safe for a log DB — hybrid schema avoids migrations normally
+      .fallbackToDestructiveMigration(dropAllTables = true) // safety net; v1→v2 AutoMigration handles the normal case
       .build()
 
   @Provides
   fun provideRequestLogDao(db: OlliteDatabase): RequestLogDao = db.requestLogDao()
+
+  @Provides
+  fun provideChatDao(db: OlliteDatabase): ChatDao = db.chatDao()
 
   @Provides
   @Singleton
