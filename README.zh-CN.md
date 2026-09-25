@@ -38,7 +38,7 @@
 
 ## 项目主页
 
-[GitHub 仓库](https://github.com/PLACEHOLDER_OWNER/OlliteRT-Zh)
+[GitHub 仓库](https://github.com/jiankujidu/OlliteRT-Zh)
 
 ## 源码与构建（开发者）
 
