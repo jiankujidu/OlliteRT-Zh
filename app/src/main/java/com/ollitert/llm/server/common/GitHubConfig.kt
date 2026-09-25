@@ -17,13 +17,21 @@
 package com.ollitert.llm.server.common
 
 /**
- * Single source of truth for the OlliteRT GitHub repository location.
+ * Single source of truth for the GitHub repository location of this build.
+ *
+ * 本分支（OlliteRT 中文版 / 一起瞎折腾）发布在自己的仓库 `jiankujidu/OlliteRT-Zh`：
+ * 项目主页、Release 更新检查、模型清单远程刷新、反馈与隐私政策链接全部指向该仓库，
+ * 这样用户能直接拿到中文版的新版本与自己维护的模型清单。
+ *
+ * 上游原项目 [NightMean/OlliteRT](https://github.com/NightMean/OlliteRT) 的版权与
+ * 致谢信息保留在各源文件头部注释与 README 中，不做替换。
+ *
  * All repo-derived URLs are built from [OWNER] and [REPO] so that a repo
  * rename or transfer only requires updating these two values.
  */
 object GitHubConfig {
-  const val OWNER = "NightMean"
-  const val REPO = "OlliteRT"
+  const val OWNER = "jiankujidu"
+  const val REPO = "OlliteRT-Zh"
 
   /** Repository homepage (e.g. for "Learn More" links). */
   const val REPO_URL = "https://github.com/$OWNER/$REPO"
@@ -71,6 +79,8 @@ object GitHubConfig {
    * URL for the master model allowlist JSON file.
    * Version filtering is handled by minAppVersion/maxAppVersion fields in the JSON.
    *
+   * 清单托管在本仓库的 `model_allowlists/v1/` 目录下，与 app 内置 assets 版本保持一致。
+   *
    * Note: raw.githubusercontent.com is unreachable from mainland China, which made every
    * refresh fail there; the request is routed through a GitHub proxy so the official
    * catalogue can still be refreshed. The bundled asset remains the offline fallback.
@@ -84,9 +94,7 @@ object GitHubConfig {
 
   /**
    * 中文版（OlliteRT 中文版 / OlliteRT-Zh）项目主页。
-   * 设置页「项目主页」入口、README 均指向此处。
-   * 注意：新建 GitHub 仓库前此处为占位，仓库创建后替换为真实地址。
+   * 设置页「项目主页」入口、赞助弹窗、README 均指向此处。
    */
-  const val PROJECT_GITHUB_URL = "https://github.com/aeroheaven1/OlliteRT-Zh"
-
+  const val PROJECT_GITHUB_URL = REPO_URL
 }
