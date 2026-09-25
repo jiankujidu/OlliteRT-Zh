@@ -106,64 +106,98 @@ internal fun displayedText(raw: String): String {
   return s.trim()
 }
 
-/** Streams a chat completion from the on-device server, emitting text deltas. */
-private fun streamChatCompletion(
+/** Snapshots one SSE stream from a single host, forwarding text deltas. */
+private fun streamOnce(
   host: String,
+  port: Int,
+  bearerToken: String,
+  body: String,
+  onDelta: (String) -> Unit,
+) {
+  val url = URL("http://$host:$port/v1/chat/completions")
+  val conn = (url.openConnection() as HttpURLConnection).apply {
+    requestMethod = "POST"
+    doOutput = true
+    connectTimeout = 8_000
+    readTimeout = 0
+    setRequestProperty("Content-Type", "application/json")
+    setRequestProperty("Accept", "text/event-stream")
+    if (bearerToken.isNotBlank()) {
+      setRequestProperty("Authorization", "Bearer $bearerToken")
+    }
+  }
+  try {
+    conn.outputStream.use { it.write(body.toByteArray(Charsets.UTF_8)) }
+
+    val code = conn.responseCode
+    if (code !in 200..299) {
+      val err = (conn.errorStream ?: conn.inputStream)
+        ?.bufferedReader()?.use { it.readText() }.orEmpty()
+      throw IllegalStateException("服务返回 $code ${err.take(300)}")
+    }
+
+    conn.inputStream.bufferedReader().use { reader ->
+      while (true) {
+        val line = reader.readLine() ?: break
+        if (line.isEmpty() || !line.startsWith("data:")) continue
+        val payload = line.removePrefix("data:").trim()
+        if (payload == "[DONE]") break
+        val delta = extractDelta(payload)
+        if (!delta.isNullOrEmpty()) onDelta(delta)
+      }
+    }
+  } finally {
+    runCatching { conn.disconnect() }
+  }
+}
+
+/**
+ * Streams a chat completion from the on-device server, emitting text deltas.
+ *
+ * [hosts] is tried in order. Falling back is only safe before the first delta:
+ * a request that already produced output must never be replayed, or the reply
+ * would be duplicated.
+ */
+private fun streamChatCompletion(
+  hosts: List<String>,
   port: Int,
   bearerToken: String,
   modelName: String?,
   history: List<Pair<String, String>>,
 ): Flow<String> = channelFlow {
   withContext(Dispatchers.IO) {
-    val url = URL("http://$host:$port/v1/chat/completions")
-    val conn = (url.openConnection() as HttpURLConnection).apply {
-      requestMethod = "POST"
-      doOutput = true
-      connectTimeout = 15_000
-      readTimeout = 0
-      setRequestProperty("Content-Type", "application/json")
-      setRequestProperty("Accept", "text/event-stream")
-      if (bearerToken.isNotBlank()) {
-        setRequestProperty("Authorization", "Bearer $bearerToken")
+    val body = buildString {
+      append("{\"model\":")
+      append(JsonPrimitive(modelName ?: "default").toString())
+      append(",\"stream\":true,\"messages\":[")
+      history.forEachIndexed { i, (role, content) ->
+        if (i > 0) append(',')
+        append("{\"role\":")
+        append(JsonPrimitive(role).toString())
+        append(",\"content\":")
+        append(JsonPrimitive(content).toString())
+        append('}')
+      }
+      append("]}")
+    }
+
+    var lastError: Exception? = null
+    for (host in hosts) {
+      var emitted = false
+      try {
+        streamOnce(host, port, bearerToken, body) { delta ->
+          emitted = true
+          trySend(delta)
+        }
+        return@withContext
+      } catch (e: Exception) {
+        // Reaching the server but getting an error back means the host is
+        // right — trying the next one would only repeat the same request.
+        if (emitted || e is IllegalStateException) throw e
+        lastError = e
       }
     }
-    try {
-      val body = buildString {
-        append("{\"model\":")
-        append(JsonPrimitive(modelName ?: "default").toString())
-        append(",\"stream\":true,\"messages\":[")
-        history.forEachIndexed { i, (role, content) ->
-          if (i > 0) append(',')
-          append("{\"role\":")
-          append(JsonPrimitive(role).toString())
-          append(",\"content\":")
-          append(JsonPrimitive(content).toString())
-          append('}')
-        }
-        append("]}")
-      }
-      conn.outputStream.use { it.write(body.toByteArray(Charsets.UTF_8)) }
-
-      val code = conn.responseCode
-      if (code !in 200..299) {
-        val err = (conn.errorStream ?: conn.inputStream)
-          ?.bufferedReader()?.use { it.readText() }.orEmpty()
-        throw IllegalStateException("服务返回 $code ${err.take(300)}")
-      }
-
-      conn.inputStream.bufferedReader().use { reader ->
-        while (true) {
-          val line = reader.readLine() ?: break
-          if (line.isEmpty() || !line.startsWith("data:")) continue
-          val payload = line.removePrefix("data:").trim()
-          if (payload == "[DONE]") break
-          val delta = extractDelta(payload)
-          if (!delta.isNullOrEmpty()) trySend(delta)
-        }
-      }
-    } finally {
-      runCatching { conn.disconnect() }
-    }
+    throw lastError ?: IllegalStateException("无法连接本地模型服务")
   }
 }
 
@@ -177,16 +211,43 @@ private fun extractDelta(payload: String): String? = try {
   null
 }
 
-/** Turns an advertised bind address into a host the app itself can always reach. */
-fun chatConnectHost(bindAddress: String?): String = when {
-  bindAddress.isNullOrBlank() -> "127.0.0.1"
-  bindAddress == "localhost" || bindAddress == "0.0.0.0" -> "127.0.0.1"
-  else -> bindAddress
+/**
+ * Hosts the in-app chat should try, best first.
+ *
+ * [bindAddress] is the *advertised* address (the LAN IP shown to the user), not
+ * the socket's bind address, so it can be unreachable from the app itself — an
+ * AP-isolated Wi-Fi or a firewall rule is enough. Loopback always works when
+ * the server listens on 0.0.0.0 or 127.0.0.1, so it goes first and the
+ * advertised address stays as a fallback for custom-IP bindings.
+ */
+fun chatConnectHosts(bindAddress: String?): List<String> {
+  val advertised = bindAddress?.trim().orEmpty()
+  return when (advertised) {
+    "", "localhost", "0.0.0.0", "127.0.0.1" -> listOf("127.0.0.1")
+    else -> listOf("127.0.0.1", advertised)
+  }
+}
+
+/** Rewrites the raw socket/HTTP failures into something a user can act on. */
+internal fun friendlyChatError(e: Exception, port: Int): String {
+  val raw = e.message.orEmpty()
+  return when {
+    raw.contains("Cleartext", ignoreCase = true) ||
+      raw.contains("not permitted", ignoreCase = true) ->
+      "系统拦截了明文 HTTP 请求，请确认已安装最新版本。"
+    e is java.net.ConnectException || raw.contains("refused", ignoreCase = true) ||
+      raw.contains("ECONNREFUSED", ignoreCase = true) ->
+      "连不上本地服务（端口 $port），请确认模型已启动。"
+    e is java.net.SocketTimeoutException || raw.contains("timeout", ignoreCase = true) ->
+      "连接超时，模型可能还在加载，稍后再试。"
+    raw.isBlank() -> "请求失败：${e.javaClass.simpleName}"
+    else -> raw
+  }
 }
 
 @Composable
 fun ChatScreen(
-  host: String,
+  hosts: List<String>,
   port: Int,
   bearerToken: String,
   serverRunning: Boolean,
@@ -231,15 +292,16 @@ fun ChatScreen(
 
     scope.launch {
       try {
-        streamChatCompletion(host, port, bearerToken, activeModelName, history).collect { delta ->
+        streamChatCompletion(hosts, port, bearerToken, activeModelName, history).collect { delta ->
           if (idx < messages.size) {
             val cur = messages[idx]
             messages[idx] = cur.copy(content = cur.content + delta)
           }
         }
       } catch (e: Exception) {
-        val msg = e.message ?: "请求失败"
-        errorText = msg
+        errorText = friendlyChatError(e, port)
+        // Keep a partial reply that already made it to screen; drop the empty
+        // placeholder so no blank bubble is left behind.
         if (idx < messages.size && messages[idx].content.isBlank()) messages.removeAt(idx)
       } finally {
         if (idx < messages.size) messages[idx] = messages[idx].copy(streaming = false)

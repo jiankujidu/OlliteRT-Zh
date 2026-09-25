@@ -55,7 +55,7 @@ import com.ollitert.llm.server.common.GitHubConfig
 import com.ollitert.llm.server.common.ServerStatus
 import com.ollitert.llm.server.ui.benchmark.BenchmarkScreen
 import com.ollitert.llm.server.ui.chat.ChatScreen
-import com.ollitert.llm.server.ui.chat.chatConnectHost
+import com.ollitert.llm.server.ui.chat.chatConnectHosts
 import com.ollitert.llm.server.ui.common.DonateDialog
 import com.ollitert.llm.server.ui.common.EngagementPromptDialog
 import com.ollitert.llm.server.ui.common.GpuUnavailableDialog
@@ -278,7 +278,7 @@ fun OlliteRTNavHost(
       val chatModelName by serverViewModel.activeModelName.collectAsStateWithLifecycle()
       val chatToken = remember { serverViewModel.getBearerToken() }
       ChatScreen(
-        host = chatConnectHost(chatBindAddress),
+        hosts = chatConnectHosts(chatBindAddress),
         port = chatPort,
         bearerToken = chatToken,
         serverRunning = chatStatus == ServerStatus.RUNNING,

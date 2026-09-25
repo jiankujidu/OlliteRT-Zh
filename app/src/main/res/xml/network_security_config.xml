@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  This app *is* a local HTTP server: it exposes an OpenAI-compatible API on
+  127.0.0.1 / the device's LAN address over plain HTTP, and its built-in chat
+  page talks back to that same loopback endpoint. Android blocks cleartext
+  traffic by default since API 28, which made the in-app chat fail with
+  "Cleartext HTTP traffic to <ip> not permitted", so cleartext is enabled here.
+
+  No public certificate is trusted beyond the system store, and no cleartext
+  traffic is required for any remote origin.
+-->
+<network-security-config>
+  <base-config cleartextTrafficPermitted="true">
+    <trust-anchors>
+      <certificates src="system" />
+    </trust-anchors>
+  </base-config>
+</network-security-config>
