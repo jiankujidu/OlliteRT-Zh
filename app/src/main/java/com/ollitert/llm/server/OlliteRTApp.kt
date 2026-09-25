@@ -373,6 +373,11 @@ fun OlliteRTApp(
               launchSingleTop = true
             }
           },
+          onChatClick = {
+            navController.navigate(OlliteRTRoute.Chat) {
+              launchSingleTop = true
+            }
+          },
           onBackClick = if (!showNav) {
             {
               // Dispatch back press so BackHandler in child screens can intercept

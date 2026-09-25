@@ -86,12 +86,11 @@ fun DonateDialog(
     title = { Text(stringResource(R.string.dialog_donate_title)) },
     text = {
       Column(
-        modifier = Modifier.verticalScroll(rememberScrollState()),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp),
       ) {
         Text(
           text = stringResource(R.string.dialog_donate_body),
-          style = MaterialTheme.typography.bodyMedium,
+          style = MaterialTheme.typography.bodySmall,
           color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
 
@@ -101,9 +100,9 @@ fun DonateDialog(
             .fillMaxWidth()
             .clip(RoundedCornerShape(12.dp))
             .background(MaterialTheme.colorScheme.surfaceContainerHighest)
-            .padding(vertical = 12.dp),
+            .padding(vertical = 10.dp),
           horizontalAlignment = Alignment.CenterHorizontally,
-          verticalArrangement = Arrangement.spacedBy(6.dp),
+          verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
           Text(
             text = stringResource(R.string.donate_qr_title),
@@ -116,7 +115,7 @@ fun DonateDialog(
             contentDescription = stringResource(R.string.community_qr_content_desc),
             contentScale = ContentScale.Fit,
             modifier = Modifier
-              .fillMaxWidth(0.72f)
+              .size(112.dp)
               .clip(RoundedCornerShape(8.dp)),
           )
           Text(
@@ -126,7 +125,7 @@ fun DonateDialog(
           )
         }
 
-        Spacer(modifier = Modifier.height(4.dp))
+        Spacer(modifier = Modifier.height(2.dp))
 
         // ── Project homepage (GitHub) ─────────────────────────────────────
         CommunityRow(
@@ -201,7 +200,7 @@ private fun CommunityRow(
       .clip(RoundedCornerShape(10.dp))
       .background(MaterialTheme.colorScheme.surfaceContainerHighest)
       .clickable(onClick = onClick)
-      .padding(horizontal = 16.dp, vertical = 12.dp),
+      .padding(horizontal = 16.dp, vertical = 9.dp),
     verticalAlignment = Alignment.CenterVertically,
     horizontalArrangement = Arrangement.spacedBy(12.dp),
   ) {

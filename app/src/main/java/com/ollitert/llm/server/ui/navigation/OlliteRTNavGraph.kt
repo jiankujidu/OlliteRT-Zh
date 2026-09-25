@@ -54,6 +54,8 @@ import androidx.navigation.toRoute
 import com.ollitert.llm.server.common.GitHubConfig
 import com.ollitert.llm.server.common.ServerStatus
 import com.ollitert.llm.server.ui.benchmark.BenchmarkScreen
+import com.ollitert.llm.server.ui.chat.ChatScreen
+import com.ollitert.llm.server.ui.chat.chatConnectHost
 import com.ollitert.llm.server.ui.common.DonateDialog
 import com.ollitert.llm.server.ui.common.EngagementPromptDialog
 import com.ollitert.llm.server.ui.common.GpuUnavailableDialog
@@ -263,6 +265,31 @@ fun OlliteRTNavHost(
     // Logs tab
     composable<OlliteRTRoute.Logs> {
       LogsScreen()
+    }
+
+    // In-app chat — talks to the locally running model over the loopback API.
+    composable<OlliteRTRoute.Chat>(
+      enterTransition = { slideInLeft() },
+      exitTransition = { slideOutRight() },
+    ) {
+      val chatPort by serverViewModel.port.collectAsStateWithLifecycle()
+      val chatStatus by serverViewModel.status.collectAsStateWithLifecycle()
+      val chatBindAddress by serverViewModel.bindAddress.collectAsStateWithLifecycle()
+      val chatModelName by serverViewModel.activeModelName.collectAsStateWithLifecycle()
+      val chatToken = remember { serverViewModel.getBearerToken() }
+      ChatScreen(
+        host = chatConnectHost(chatBindAddress),
+        port = chatPort,
+        bearerToken = chatToken,
+        serverRunning = chatStatus == ServerStatus.RUNNING,
+        activeModelName = chatModelName,
+        onOpenModels = {
+          navController.navigate(OlliteRTRoute.Models) {
+            launchSingleTop = true
+            popUpTo<OlliteRTRoute.Chat> { inclusive = true }
+          }
+        },
+      )
     }
 
     // Settings screen

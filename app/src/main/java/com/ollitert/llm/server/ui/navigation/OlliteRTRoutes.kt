@@ -39,6 +39,9 @@ sealed interface OlliteRTRoute {
   data object Settings : OlliteRTRoute
 
   @Serializable
+  data object Chat : OlliteRTRoute
+
+  @Serializable
   data class Benchmark(val modelName: String) : OlliteRTRoute
 
   @Serializable

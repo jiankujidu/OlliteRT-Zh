@@ -35,6 +35,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
+import androidx.compose.material.icons.automirrored.outlined.Chat
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -72,6 +73,7 @@ fun OlliteRTTopBar(
   serverStatus: ServerStatus,
   onSettingsClick: () -> Unit,
   modifier: Modifier = Modifier,
+  onChatClick: (() -> Unit)? = null,
   isInferring: Boolean = false,
   modelLoadPhase: ModelLoadPhase = ModelLoadPhase.STARTING,
   onBackClick: (() -> Unit)? = null,
@@ -133,21 +135,36 @@ fun OlliteRTTopBar(
       modifier = Modifier.align(Alignment.Center),
     )
 
-    // Right: Settings gear (hidden when already on Settings)
+    // Right: chat + settings gear (hidden when on a detail screen)
     if (onBackClick == null) {
-      Box(modifier = Modifier.align(Alignment.CenterEnd)) {
-        TooltipBox(
-          positionProvider = TooltipDefaults.rememberTooltipPositionProvider(TooltipAnchorPosition.Below),
-          tooltip = { PlainTooltip { Text(stringResource(R.string.topbar_settings)) } },
-          state = rememberTooltipState(),
-        ) {
-          IconButton(onClick = onSettingsClick) {
+      Row(
+        modifier = Modifier.align(Alignment.CenterEnd),
+        verticalAlignment = Alignment.CenterVertically,
+      ) {
+        if (onChatClick != null) {
+          IconButton(onClick = onChatClick) {
             Icon(
-              imageVector = Icons.Outlined.Settings,
-              contentDescription = stringResource(R.string.topbar_settings),
+              imageVector = Icons.AutoMirrored.Outlined.Chat,
+              contentDescription = "对话",
               tint = MaterialTheme.colorScheme.onSurfaceVariant,
               modifier = Modifier.size(24.dp),
             )
+          }
+        }
+        Box {
+          TooltipBox(
+            positionProvider = TooltipDefaults.rememberTooltipPositionProvider(TooltipAnchorPosition.Below),
+            tooltip = { PlainTooltip { Text(stringResource(R.string.topbar_settings)) } },
+            state = rememberTooltipState(),
+          ) {
+            IconButton(onClick = onSettingsClick) {
+              Icon(
+                imageVector = Icons.Outlined.Settings,
+                contentDescription = stringResource(R.string.topbar_settings),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(24.dp),
+              )
+            }
           }
         }
       }
