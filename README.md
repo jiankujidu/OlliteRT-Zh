@@ -15,11 +15,12 @@
 
 | 版本 | 文件 | 大小 | 说明 |
 |---|---|---|---|
-| v939 | [**OlliteRT-Zh-v939.apk**](https://github.com/jiankujidu/OlliteRT-Zh/releases/download/v0.9.8-v939/OlliteRT-Zh-v939.apk) | 110 MB | 最新稳定版（v0.9.8） |
+| v940 | [**OlliteRT-Zh-v940.apk**](https://github.com/jiankujidu/OlliteRT-Zh/releases/download/v0.9.9-v940/OlliteRT-Zh-v940.apk) | 110 MB | 最新稳定版（v0.9.9） |
 
 **更新记录**
 
-- **v939**（v0.9.8）：**图标透明化** —— 去掉黑底方块，桌面图标 / 开屏图标改为真透明底（RGBA），深色主题下与桌面自然融合；**顶栏品牌标重新设计**，只保留太空人上半身，解决 30dp 小尺寸下糊成一团的问题；版号升至 **0.9.8**。
+- **v940**（v0.9.9）：**修复图标裁切** —— 贴纸完整保留不再被切掉一截，四周强制留透明边距（逐尺寸校验四边留白 > 0）；顶栏品牌标恢复完整贴纸；版号升至 **0.9.9**。
+- v939（v0.9.8）：图标透明化，去掉黑底方块（RGBA 透明底）。
 - v938（v0.9.7）：**Logo 全量换新** —— 桌面图标、顶栏品牌标、开屏图标、`beta` / `dev` 渠道包、Play 商店图标、favicon 全部换成最新贴纸版；彻底删除所有旧的自适应图标定义（`anydpi` / `background` / `foreground` / `monochrome`）。
 - v937：App 内的 GitHub 链接全部指向本仓库（项目主页、Release 更新检查、模型清单远程刷新、提交反馈、隐私政策），仓库补齐中文版隐私政策与问题反馈模板。
 - v936：桌面图标换成最终贴纸版 LOGO。
