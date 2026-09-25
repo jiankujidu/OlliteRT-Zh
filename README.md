@@ -15,11 +15,12 @@
 
 | 版本 | 文件 | 大小 | 说明 |
 |---|---|---|---|
-| v937 | [**OlliteRT-Zh-v937.apk**](https://github.com/jiankujidu/OlliteRT-Zh/releases/download/v0.9.6-v937/OlliteRT-Zh-v937.apk) | 109 MB | 最新稳定版 |
+| v938 | [**OlliteRT-Zh-v938.apk**](https://github.com/jiankujidu/OlliteRT-Zh/releases/download/v0.9.7-v938/OlliteRT-Zh-v938.apk) | 109 MB | 最新稳定版（v0.9.7） |
 
 **更新记录**
 
-- **v937**：App 内的 GitHub 链接全部指向本仓库（项目主页、Release 更新检查、模型清单远程刷新、提交反馈、隐私政策），仓库补齐中文版隐私政策与问题反馈模板。
+- **v938**（v0.9.7）：**Logo 全量换新** —— 桌面图标、顶栏品牌标、开屏图标、`beta` / `dev` 渠道包、Play 商店图标、favicon 全部换成最新贴纸版；彻底删除所有旧的自适应图标定义（`anydpi` / `background` / `foreground` / `monochrome`），版号升至 **0.9.7**。
+- v937：App 内的 GitHub 链接全部指向本仓库（项目主页、Release 更新检查、模型清单远程刷新、提交反馈、隐私政策），仓库补齐中文版隐私政策与问题反馈模板。
 - v936：桌面图标换成最终贴纸版 LOGO。
 
 **安装要求**
