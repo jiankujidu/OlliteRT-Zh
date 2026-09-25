@@ -56,6 +56,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ollitert.llm.server.BuildConfig
@@ -79,19 +80,21 @@ fun OlliteRTTopBar(
   onBackClick: (() -> Unit)? = null,
   trailingContent: @Composable (() -> Unit)? = null,
 ) {
-  Box(
+  // Laid out as a single flow row (not overlapping Box children) so the brand
+  // name, the status pill and the action icons can never cover each other on
+  // narrow screens. The brand text absorbs the leftover width and ellipsises
+  // instead of running underneath the pill.
+  Row(
     modifier = modifier
       .fillMaxWidth()
       .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.92f))
       .statusBarsPadding()
       .padding(horizontal = 16.dp, vertical = 12.dp),
+    verticalAlignment = Alignment.CenterVertically,
   ) {
-    // Left: Back arrow OR OlliteRT brand (not both)
     if (onBackClick != null) {
-      IconButton(
-        onClick = onBackClick,
-        modifier = Modifier.align(Alignment.CenterStart),
-      ) {
+      // Detail screen: back arrow, centred status pill, trailing slot.
+      IconButton(onClick = onBackClick) {
         Icon(
           imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
           contentDescription = stringResource(R.string.topbar_back),
@@ -99,78 +102,70 @@ fun OlliteRTTopBar(
           modifier = Modifier.size(24.dp),
         )
       }
+      Spacer(modifier = Modifier.weight(1f))
+      StatusPill(
+        serverStatus = serverStatus,
+        isInferring = isInferring,
+        modelLoadPhase = modelLoadPhase,
+      )
+      Spacer(modifier = Modifier.weight(1f))
+      Box(
+        modifier = Modifier.size(48.dp),
+        contentAlignment = Alignment.CenterEnd,
+      ) {
+        trailingContent?.invoke()
+      }
     } else {
-      Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier.align(Alignment.CenterStart),
-      ) {
-        Image(
-          painter = painterResource(id = R.drawable.ic_brand),
-          contentDescription = stringResource(R.string.topbar_brand),
-          modifier = Modifier
-            .size(28.dp)
-            .clip(RoundedCornerShape(6.dp)),
-        )
-        Spacer(modifier = Modifier.width(8.dp))
-        // Brand name — includes channel suffix for dev/beta builds
-        Text(
-          text = when (BuildConfig.CHANNEL) {
-            "dev" -> stringResource(R.string.topbar_brand_dev)
-            "beta" -> stringResource(R.string.topbar_brand_beta)
-            else -> stringResource(R.string.topbar_brand)
-          },
-          color = OlliteRTPrimary,
-          fontFamily = SpaceGroteskFontFamily,
-          fontWeight = FontWeight.Bold,
-          fontSize = 22.sp,
-        )
-      }
-    }
-
-    // Center: Status pill — always truly centered on screen
-    StatusPill(
-      serverStatus = serverStatus,
-      isInferring = isInferring,
-      modelLoadPhase = modelLoadPhase,
-      modifier = Modifier.align(Alignment.Center),
-    )
-
-    // Right: chat + settings gear (hidden when on a detail screen)
-    if (onBackClick == null) {
-      Row(
-        modifier = Modifier.align(Alignment.CenterEnd),
-        verticalAlignment = Alignment.CenterVertically,
-      ) {
-        if (onChatClick != null) {
-          IconButton(onClick = onChatClick) {
-            Icon(
-              imageVector = Icons.AutoMirrored.Outlined.Chat,
-              contentDescription = "对话",
-              tint = MaterialTheme.colorScheme.onSurfaceVariant,
-              modifier = Modifier.size(24.dp),
-            )
-          }
-        }
-        Box {
-          TooltipBox(
-            positionProvider = TooltipDefaults.rememberTooltipPositionProvider(TooltipAnchorPosition.Below),
-            tooltip = { PlainTooltip { Text(stringResource(R.string.topbar_settings)) } },
-            state = rememberTooltipState(),
-          ) {
-            IconButton(onClick = onSettingsClick) {
-              Icon(
-                imageVector = Icons.Outlined.Settings,
-                contentDescription = stringResource(R.string.topbar_settings),
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.size(24.dp),
-              )
-            }
-          }
+      // Home screen: brand mark + name, then status pill, then actions.
+      Image(
+        painter = painterResource(id = R.drawable.ic_brand),
+        contentDescription = stringResource(R.string.topbar_brand),
+        modifier = Modifier.size(30.dp),
+      )
+      Spacer(modifier = Modifier.width(8.dp))
+      Text(
+        text = when (BuildConfig.CHANNEL) {
+          "dev" -> stringResource(R.string.topbar_brand_dev)
+          "beta" -> stringResource(R.string.topbar_brand_beta)
+          else -> stringResource(R.string.topbar_brand)
+        },
+        color = OlliteRTPrimary,
+        fontFamily = SpaceGroteskFontFamily,
+        fontWeight = FontWeight.Bold,
+        fontSize = 19.sp,
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis,
+        modifier = Modifier.weight(1f),
+      )
+      Spacer(modifier = Modifier.width(8.dp))
+      StatusPill(
+        serverStatus = serverStatus,
+        isInferring = isInferring,
+        modelLoadPhase = modelLoadPhase,
+      )
+      if (onChatClick != null) {
+        IconButton(onClick = onChatClick) {
+          Icon(
+            imageVector = Icons.AutoMirrored.Outlined.Chat,
+            contentDescription = "对话",
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.size(24.dp),
+          )
         }
       }
-    } else if (trailingContent != null) {
-      Box(modifier = Modifier.align(Alignment.CenterEnd)) {
-        trailingContent()
+      TooltipBox(
+        positionProvider = TooltipDefaults.rememberTooltipPositionProvider(TooltipAnchorPosition.Below),
+        tooltip = { PlainTooltip { Text(stringResource(R.string.topbar_settings)) } },
+        state = rememberTooltipState(),
+      ) {
+        IconButton(onClick = onSettingsClick) {
+          Icon(
+            imageVector = Icons.Outlined.Settings,
+            contentDescription = stringResource(R.string.topbar_settings),
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.size(24.dp),
+          )
+        }
       }
     }
   }
@@ -205,19 +200,19 @@ fun StatusPill(
     modifier = modifier
       .clip(RoundedCornerShape(50))
       .background(MaterialTheme.colorScheme.surfaceContainerHigh)
-      .padding(horizontal = 12.dp, vertical = 6.dp),
+      .padding(horizontal = 10.dp, vertical = 5.dp),
     verticalAlignment = Alignment.CenterVertically,
   ) {
     if (serverStatus == ServerStatus.LOADING) {
       CircularProgressIndicator(
-        modifier = Modifier.size(12.dp),
+        modifier = Modifier.size(11.dp),
         color = animatedDotColor,
         strokeWidth = 2.dp,
       )
     } else {
       Box(
         modifier = Modifier
-          .size(8.dp)
+          .size(7.dp)
           .clip(RoundedCornerShape(50))
           .background(animatedDotColor)
       )
@@ -233,6 +228,7 @@ fun StatusPill(
         style = MaterialTheme.typography.labelSmall,
         color = MaterialTheme.colorScheme.onSurface,
         fontWeight = FontWeight.SemiBold,
+        maxLines = 1,
       )
     }
   }
