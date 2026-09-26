@@ -60,6 +60,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import android.widget.Toast
 import com.ollitert.llm.server.data.db.ChatMessageEntity
 import com.ollitert.llm.server.ui.common.MarkdownText
@@ -72,6 +73,70 @@ data class Segment(
   val text: String,
   val lang: String = "",
 )
+
+/** Tags that only ever appear inside a real HTML document/fragment. */
+private val HTML_DOC_HINT = Regex("(?i)<(html|!doctype|body|head|style|script)\\b")
+
+/** A paired container tag, e.g. `<div class="x">…</div>`. */
+private val HTML_PAIR =
+  Regex("(?is)<(div|table|h1|h2|h3|p|span|button|ul|ol|li|section|svg|form)\\b[^>]*>.*?</\\1\\s*>")
+
+private val HTML_TAG = Regex("(?is)<[^>]+>")
+
+/**
+ * True when [code] is HTML rather than prose.
+ *
+ * Local models usually emit the markup **without** a ``` fence, so anything that
+ * looks like HTML has to be offered a preview even outside fenced blocks.
+ */
+internal fun looksLikeHtml(code: String): Boolean =
+  HTML_DOC_HINT.containsMatchIn(code) ||
+    HTML_PAIR.containsMatchIn(code) ||
+    (code.contains("<svg", ignoreCase = true) && code.contains("</svg>"))
+
+/**
+ * Returns [text] when it is an HTML answer worth showing as source + preview, or
+ * null when it is ordinary prose.
+ *
+ * The `>` / `<` guard rejects half-streamed markup: without it a message would flip
+ * between markdown and a code card on every token while the answer arrives.
+ */
+internal fun extractHtmlCandidate(text: String): String? {
+  val t = text.trim()
+  if (t.length < 16) return null
+  if (!looksLikeHtml(t)) return null
+  val lastOpen = t.lastIndexOf('<')
+  val lastClose = t.lastIndexOf('>')
+  if (lastOpen > lastClose) return null
+  if (HTML_TAG.replace(t, "").trim().length > 40) return null
+  return t
+}
+
+/** Wraps a bare HTML fragment in a full document so it renders with sane defaults. */
+private fun wrapHtmlDocument(code: String): String {
+  val s = code.trim()
+  val viewport = "<meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">"
+  val baseStyle =
+    "<style>html,body{margin:0;padding:0;}body{font-family:sans-serif;padding:12px;line-height:1.5;}" +
+      "img{max-width:100%;height:auto;}pre,code{white-space:pre-wrap;}</style>"
+  if (!s.contains("<html", ignoreCase = true)) {
+    return "<!DOCTYPE html><html><head>$viewport$baseStyle</head><body>$s</body></html>"
+  }
+  var out = if (s.startsWith("<!", ignoreCase = true)) s else "<!DOCTYPE html>$s"
+  if (!out.contains("viewport", ignoreCase = true)) {
+    // Splice the meta tag in manually: the replaceFirst(regex) { … } overload resolves
+    // to the (String, String) variant here and fails to compile.
+    val headTag =
+      Regex("(?i)<head\\b[^>]*>").find(out)
+        ?: Regex("(?i)<html\\b[^>]*>").find(out)
+    if (headTag != null) {
+      val cut = headTag.range.last + 1
+      val insert = if (headTag.value.contains("<head", ignoreCase = true)) viewport else "<head>$viewport</head>"
+      out = out.substring(0, cut) + insert + out.substring(cut)
+    }
+  }
+  return out
+}
 
 /** Splits a raw assistant/user message into renderable segments: markdown text,
  *  fenced code blocks, and `<think>` reasoning blocks. */
@@ -172,14 +237,10 @@ internal fun CodeBlockCard(
   val clipboard = LocalClipboardManager.current
   val context = LocalContext.current
   var copied by remember { mutableStateOf(false) }
-  val looksLikeHtml =
-    code.contains("<html", ignoreCase = true) ||
-      code.contains("<!doctype", ignoreCase = true) ||
-      (code.contains("<div") && code.contains("</div>"))
   val isHtml =
     lang.equals("html", ignoreCase = true) ||
       lang.equals("htm", ignoreCase = true) ||
-      looksLikeHtml
+      looksLikeHtml(code)
   var showPreview by remember { mutableStateOf(false) }
 
   Surface(
@@ -255,25 +316,46 @@ internal fun HtmlPreviewDialog(
   onDismiss: () -> Unit,
 ) {
   val clipboard = LocalClipboardManager.current
-  Dialog(onDismissRequest = onDismiss) {
+  val context = LocalContext.current
+  val document = remember(html) { wrapHtmlDocument(html) }
+  // The content is not reloaded on every recomposition — repeating loadData would
+  // blank the view and restart rendering, which looked like a broken preview.
+  var loaded by remember { mutableStateOf<String?>(null) }
+
+  Dialog(
+    onDismissRequest = onDismiss,
+    properties = DialogProperties(usePlatformDefaultWidth = false),
+  ) {
     Surface(
       shape = RoundedCornerShape(16.dp),
       color = MaterialTheme.colorScheme.surface,
-      modifier = Modifier.fillMaxWidth().heightIn(max = 560.dp),
+      // An explicit box height is required: a wrap-content Dialog leaves weight(1f)
+      // with no finite constraint, and the WebView would measure 0 px tall.
+      modifier = Modifier.fillMaxWidth(0.96f).fillMaxHeight(0.88f),
     ) {
       Column {
         Row(
-          Modifier.fillMaxWidth().padding(12.dp),
+          Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
           verticalAlignment = Alignment.CenterVertically,
           horizontalArrangement = Arrangement.SpaceBetween,
         ) {
           Text("HTML 预览", style = MaterialTheme.typography.titleSmall)
-          IconButton(onClick = onDismiss) {
-            Icon(
-              Icons.Outlined.Close,
-              contentDescription = "关闭",
-              tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+          Row(verticalAlignment = Alignment.CenterVertically) {
+            TextButton(
+              onClick = {
+                clipboard.setText(AnnotatedString(html))
+                Toast.makeText(context, "已复制 HTML", Toast.LENGTH_SHORT).show()
+              },
+            ) {
+              Text("复制", style = MaterialTheme.typography.labelMedium)
+            }
+            IconButton(onClick = onDismiss) {
+              Icon(
+                Icons.Outlined.Close,
+                contentDescription = "关闭",
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+              )
+            }
           }
         }
         HorizontalDivider()
@@ -284,12 +366,19 @@ internal fun HtmlPreviewDialog(
               WebView(ctx).apply {
                 settings.javaScriptEnabled = true
                 settings.domStorageEnabled = true
-                settings.mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
-                settings.allowFileAccess = false
-                settings.allowContentAccess = false
+                settings.loadsImagesAutomatically = true
                 settings.loadWithOverviewMode = true
                 settings.useWideViewPort = true
-                loadDataWithBaseURL(null, html, "text/html", "utf-8", null)
+                settings.setSupportZoom(true)
+                settings.builtInZoomControls = true
+                settings.displayZoomControls = false
+                // Offline-only: external CDNs would otherwise stall the page load and
+                // leave a blank screen while the request times out.
+                settings.blockNetworkLoads = true
+                settings.cacheMode = WebSettings.LOAD_NO_CACHE
+                setBackgroundColor(0xFFFFFFFF.toInt())
+                loaded = document
+                loadDataWithBaseURL(null, document, "text/html", "utf-8", null)
               }
             } catch (e: Exception) {
               TextView(ctx).apply {
@@ -300,17 +389,21 @@ internal fun HtmlPreviewDialog(
             }
           },
           update = { view ->
-            if (view is WebView) {
+            if (view is WebView && loaded != document) {
+              loaded = document
               runCatching {
-                view.loadDataWithBaseURL(null, html, "text/html", "utf-8", null)
+                view.loadDataWithBaseURL(null, document, "text/html", "utf-8", null)
               }
             }
           },
         )
-        Row(Modifier.padding(12.dp)) {
-          TextButton(onClick = { clipboard.setText(AnnotatedString(html)) }) {
-            Text("复制 HTML")
-          }
+        HorizontalDivider()
+        Row(Modifier.padding(horizontal = 12.dp, vertical = 6.dp)) {
+          Text(
+            "离线渲染，外链资源不会加载",
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+          )
         }
       }
     }
@@ -331,6 +424,22 @@ internal fun MessageRow(
   // so when reasoning is *all* we got, we surface it instead of swallowing the turn.
   val thinkOnly =
     !hasBody && !isUser && segments.any { it.type == SegType.THINK && it.text.isNotBlank() }
+  // Local models usually answer with raw markup instead of a ```html fence. Rendered as
+  // markdown that showed the tags as plain text with no preview — "the HTML won't render".
+  // Judged only once streaming stops, so the bubble cannot flip between markdown and a
+  // code card while tokens are still arriving.
+  val htmlCandidates =
+    remember(msg.content, msg.streaming) {
+      if (msg.streaming) {
+        emptyMap()
+      } else {
+        val map = LinkedHashMap<Int, String>()
+        segments.forEachIndexed { i, seg ->
+          if (seg.type == SegType.TEXT) extractHtmlCandidate(seg.text)?.let { map[i] = it }
+        }
+        map
+      }
+    }
 
   Row(
     Modifier.fillMaxWidth(),
@@ -360,12 +469,29 @@ internal fun MessageRow(
         }
 
         if (hasBody) {
-          segments.forEach { seg ->
-            when (seg.type) {
-              SegType.THINK -> ThinkingBlock(seg.text)
-              SegType.CODE -> CodeBlockCard(seg.lang, seg.text)
-              SegType.TEXT ->
-                MarkdownText(seg.text, modifier = Modifier.fillMaxWidth())
+          if (htmlCandidates.isNotEmpty()) {
+            segments.forEachIndexed { index, seg ->
+              when (seg.type) {
+                SegType.THINK -> ThinkingBlock(seg.text)
+                SegType.CODE -> CodeBlockCard(seg.lang, seg.text)
+                SegType.TEXT -> {
+                  val candidate = htmlCandidates[index]
+                  if (candidate != null) {
+                    CodeBlockCard("html", candidate)
+                  } else {
+                    MarkdownText(seg.text, modifier = Modifier.fillMaxWidth())
+                  }
+                }
+              }
+            }
+          } else {
+            segments.forEach { seg ->
+              when (seg.type) {
+                SegType.THINK -> ThinkingBlock(seg.text)
+                SegType.CODE -> CodeBlockCard(seg.lang, seg.text)
+                SegType.TEXT ->
+                  MarkdownText(seg.text, modifier = Modifier.fillMaxWidth())
+              }
             }
           }
         } else if (thinkOnly) {
