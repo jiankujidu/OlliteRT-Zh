@@ -29,11 +29,13 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Button
+import androidx.compose.material3.SuggestionChip
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.Send
 import androidx.compose.material.icons.outlined.Add
+import androidx.compose.material.icons.outlined.AutoAwesome
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.Menu
 import androidx.compose.material.icons.outlined.Stop
@@ -153,7 +155,13 @@ fun ChatScreen(
         verticalArrangement = Arrangement.spacedBy(10.dp),
       ) {
         if (messages.isEmpty()) {
-          item { ChatEmptyState(serverRunning, onOpenModels) }
+          item {
+            ChatEmptyState(
+              serverRunning = serverRunning,
+              onOpenModels = onOpenModels,
+              onQuickSend = { viewModel.send(it) },
+            )
+          }
         }
         items(messages, key = { it.id }) { msg ->
           MessageRow(msg, onRegenerate = viewModel::regenerate)
@@ -250,24 +258,56 @@ fun ChatScreen(
 private fun ChatEmptyState(
   serverRunning: Boolean,
   onOpenModels: () -> Unit,
+  onQuickSend: (String) -> Unit,
 ) {
+  val quickQuestions =
+    listOf(
+      "帮我写一段 Python 爬虫代码",
+      "用 HTML 做一个个人名片卡片",
+      "用一句话解释什么是量子纠缠",
+    )
   Column(
     Modifier
       .fillMaxWidth()
-      .padding(top = 24.dp, start = 16.dp, end = 16.dp),
+      .padding(top = 28.dp, start = 16.dp, end = 16.dp),
   ) {
+    Text(
+      text = if (serverRunning) "有什么可以帮你的？" else "还没有运行模型",
+      style = MaterialTheme.typography.titleMedium,
+      color = MaterialTheme.colorScheme.onSurface,
+      fontWeight = FontWeight.SemiBold,
+    )
+    Spacer(Modifier.height(6.dp))
     Text(
       text =
         if (serverRunning) {
-          "直接在这里向本地模型提问吧。\n（模型在手机上离线运行，不联网）"
+          "点下面的快捷提问，或直接输入。模型在手机上离线运行，不联网。"
         } else {
-          "还没有运行模型。先去「模型」页启动一个模型，再回来对话。"
+          "先去「模型」页启动一个模型，再回来对话。"
         },
       style = MaterialTheme.typography.bodyMedium,
       color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
-    if (!serverRunning) {
-      Spacer(Modifier.size(12.dp))
+    Spacer(Modifier.height(16.dp))
+    if (serverRunning) {
+      quickQuestions.forEach { q ->
+        SuggestionChip(
+          onClick = { onQuickSend(q) },
+          label = { Text(q, style = MaterialTheme.typography.bodyMedium) },
+          icon = {
+            Icon(
+              Icons.Outlined.AutoAwesome,
+              contentDescription = null,
+              Modifier.size(16.dp),
+            )
+          },
+          modifier =
+            Modifier
+              .fillMaxWidth()
+              .padding(vertical = 4.dp),
+        )
+      }
+    } else {
       Button(onClick = onOpenModels, shape = RoundedCornerShape(50)) {
         Text("去启动模型")
       }
