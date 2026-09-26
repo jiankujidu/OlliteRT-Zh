@@ -55,6 +55,9 @@ private val chatJson =
     isLenient = true
   }
 
+/** Minimum gap between two database writes of a streaming answer, in ms. */
+private const val STREAM_FLUSH_MS = 120L
+
 /** Hides `<think>` reasoning blocks, including the still-open one while streaming. */
 internal fun displayedText(raw: String): String {
   var s = raw.replace(Regex("(?s)<think>.*?</think>"), "")
@@ -242,6 +245,11 @@ constructor(
     )
     _isGenerating.value = true
     val sb = StringBuilder()
+    // Persisting **every** token made Room re-query the whole table and recompose the
+    // entire list ~30 times per second, which visibly strobed the screen while streaming.
+    // Coalescing writes down to ~8/s keeps it smooth; completion always writes the final
+    // text below, so no content can be lost by the throttle.
+    var lastFlush = 0L
     try {
       streamChatCompletionCancellable(
         hosts = hosts,
@@ -252,10 +260,14 @@ constructor(
         onConn = { conn -> currentConnection = conn },
         onDelta = { delta ->
           sb.append(delta)
-          viewModelScope.launch {
-            chatDao.updateMessage(
-              ChatMessageEntity(assistantId, cid, "assistant", sb.toString(), now, sort, streaming = true),
-            )
+          val tick = System.currentTimeMillis()
+          if (tick - lastFlush >= STREAM_FLUSH_MS) {
+            lastFlush = tick
+            viewModelScope.launch {
+              chatDao.updateMessage(
+                ChatMessageEntity(assistantId, cid, "assistant", sb.toString(), now, sort, streaming = true),
+              )
+            }
           }
         },
       )
