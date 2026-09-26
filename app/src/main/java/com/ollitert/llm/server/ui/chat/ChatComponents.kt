@@ -118,8 +118,12 @@ private fun nextSpecial(
 }
 
 @Composable
-internal fun ThinkingBlock(thinking: String) {
-  var expanded by remember { mutableStateOf(false) }
+internal fun ThinkingBlock(
+  thinking: String,
+  defaultExpanded: Boolean = false,
+  title: String = "思考过程",
+) {
+  var expanded by remember { mutableStateOf(defaultExpanded) }
   Surface(
     color = MaterialTheme.colorScheme.surfaceContainerLow,
     shape = RoundedCornerShape(10.dp),
@@ -138,7 +142,7 @@ internal fun ThinkingBlock(thinking: String) {
         )
         Spacer(Modifier.width(6.dp))
         Text(
-          "思考过程",
+          title,
           style = MaterialTheme.typography.labelSmall,
           color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -289,6 +293,12 @@ internal fun MessageRow(
   val isUser = msg.role == "user"
   val segments = remember(msg.content) { parseMessage(msg.content) }
   val hasBody = segments.any { it.type != SegType.THINK && it.text.isNotBlank() }
+  // Thinking models (e.g. Agents-A1) stream their reasoning inside <think> … </think>
+  // on the same channel as the answer, and often never emit a closing tag or a final
+  // answer. Hiding it wholesale left an empty bubble that looked like "no reply at all",
+  // so when reasoning is *all* we got, we surface it instead of swallowing the turn.
+  val thinkOnly =
+    !hasBody && !isUser && segments.any { it.type == SegType.THINK && it.text.isNotBlank() }
 
   Row(
     Modifier.fillMaxWidth(),
@@ -326,6 +336,18 @@ internal fun MessageRow(
                 MarkdownText(seg.text, modifier = Modifier.fillMaxWidth())
             }
           }
+        } else if (thinkOnly) {
+          // Only reasoning came back — show it expanded so the reply is never empty,
+          // and explain why there is no final answer.
+          segments.filter { it.type == SegType.THINK }.forEach { seg ->
+            ThinkingBlock(seg.text, defaultExpanded = true, title = "模型思考内容")
+          }
+          Spacer(Modifier.height(4.dp))
+          Text(
+            "模型只输出了思考内容、没有生成正文。可在「模型」页把该模型的「思考」关掉，再点重新生成。",
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+          )
         } else if (msg.streaming) {
           Text(
             "思考中…",
@@ -334,13 +356,13 @@ internal fun MessageRow(
           )
         } else if (!isUser) {
           Text(
-            "…",
+            "模型没有返回内容，可直接重新生成或换个模型再试。",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
           )
         }
 
-        if (!isUser && !msg.streaming && hasBody) {
+        if (!isUser && !msg.streaming) {
           Spacer(Modifier.height(6.dp))
           Row {
             TextButton(
