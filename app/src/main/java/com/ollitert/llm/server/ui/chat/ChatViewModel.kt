@@ -81,6 +81,20 @@ internal fun friendlyChatError(e: Exception, port: Int): String {
   }
 }
 
+/**
+ * Builds the wire history from persisted messages. Assistant turns contribute only their
+ * visible answer — raw `<think>` reasoning is never fed back — and turns that produced
+ * nothing visible are dropped, so a thinking-only reply can't poison the next prompt.
+ */
+private fun historyOf(msgs: List<ChatMessageEntity>): MutableList<Pair<String, String>> {
+  val out = ArrayList<Pair<String, String>>(msgs.size)
+  for (m in msgs) {
+    val visible = if (m.role == "assistant") displayedText(m.content) else m.content
+    if (visible.isNotBlank()) out.add(m.role to visible)
+  }
+  return out
+}
+
 @HiltViewModel
 class ChatViewModel
 @Inject
@@ -194,11 +208,7 @@ constructor(
             if (isFirst) content.take(14).ifBlank { "新对话" } else conv.title
           chatDao.updateConversation(conv.copy(title = title, updatedAt = now))
         }
-        val history =
-          existing
-            .filter { it.content.isNotBlank() }
-            .map { it.role to (displayedText(it.content).ifBlank { it.content }) }
-            .toMutableList()
+        val history = historyOf(existing)
         history += "user" to content
         generate(cid, history)
       }
@@ -218,11 +228,7 @@ constructor(
         val msgs = chatDao.getMessages(cid)
         val lastAssistant = msgs.lastOrNull { it.role == "assistant" } ?: return@launch
         chatDao.deleteMessage(lastAssistant.id)
-        val history =
-          msgs
-            .takeWhile { it.id != lastAssistant.id }
-            .filter { it.content.isNotBlank() }
-            .map { it.role to (displayedText(it.content).ifBlank { it.content }) }
+        val history = historyOf(msgs.takeWhile { it.id != lastAssistant.id })
         generate(cid, history)
       }
   }
@@ -253,6 +259,14 @@ constructor(
           }
         },
       )
+      if (sb.isEmpty()) {
+        // The SSE stream ended without a single delta. Some setups answer a
+        // `stream:true` request with a plain (non-SSE) body in that case, so retry
+        // once without streaming — better a slower reply than an empty bubble.
+        chatCompletionOnce(hosts, port, bearerToken, activeModelName, history)
+          ?.takeIf { it.isNotBlank() }
+          ?.let { sb.append(it) }
+      }
       chatDao.updateMessage(
         ChatMessageEntity(assistantId, cid, "assistant", sb.toString(), now, sort, streaming = false),
       )
@@ -452,3 +466,67 @@ private fun extractDelta(payload: String): String? =
   } catch (_: Exception) {
     null
   }
+
+private fun extractMessageContent(payload: String): String? =
+  try {
+    val choices = chatJson.parseToJsonElement(payload).jsonObject["choices"]?.jsonArray
+    val first = choices?.firstOrNull()?.jsonObject
+    val message = first?.get("message")?.jsonObject
+    (message?.get("content") as? JsonPrimitive)?.contentOrNull
+  } catch (_: Exception) {
+    null
+  }
+
+/**
+ * One-shot (non-streaming) request used as a fallback when the SSE stream produced no
+ * deltas. Returns the full reply text, or null when no host answered.
+ */
+private suspend fun chatCompletionOnce(
+  hosts: List<String>,
+  port: Int,
+  bearerToken: String,
+  modelName: String?,
+  history: List<Pair<String, String>>,
+): String? = withContext(Dispatchers.IO) {
+  val body = buildString {
+    append("{\"model\":")
+    append(JsonPrimitive(modelName ?: "default").toString())
+    append(",\"stream\":false,\"messages\":[")
+    history.forEachIndexed { i, (role, content) ->
+      if (i > 0) append(',')
+      append("{\"role\":")
+      append(JsonPrimitive(role).toString())
+      append(",\"content\":")
+      append(JsonPrimitive(content).toString())
+      append('}')
+    }
+    append("]}")
+  }
+  for (host in hosts) {
+    var conn: HttpURLConnection? = null
+    try {
+      val url = URL("http://$host:$port/v1/chat/completions")
+      val c =
+        (url.openConnection() as HttpURLConnection).apply {
+          requestMethod = "POST"
+          doOutput = true
+          connectTimeout = 8_000
+          readTimeout = 120_000
+          setRequestProperty("Content-Type", "application/json")
+          if (bearerToken.isNotBlank()) {
+            setRequestProperty("Authorization", "Bearer $bearerToken")
+          }
+        }
+      conn = c
+      c.outputStream.use { it.write(body.toByteArray(Charsets.UTF_8)) }
+      if (c.responseCode !in 200..299) continue
+      val text = c.inputStream.bufferedReader().use { it.readText() }
+      return@withContext extractMessageContent(text)
+    } catch (_: Exception) {
+      // fall through to the next host
+    } finally {
+      runCatching { conn?.disconnect() }
+    }
+  }
+  null
+}
