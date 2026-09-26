@@ -56,7 +56,7 @@ private val chatJson =
   }
 
 /** Minimum gap between two database writes of a streaming answer, in ms. */
-private const val STREAM_FLUSH_MS = 120L
+private const val STREAM_FLUSH_MS = 220L
 
 /** Hides `<think>` reasoning blocks, including the still-open one while streaming. */
 internal fun displayedText(raw: String): String {
