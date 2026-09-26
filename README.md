@@ -15,9 +15,11 @@
 
 | 版本 | 文件 | 大小 | 说明 |
 |---|---|---|---|
-| v946 | [**OlliteRT-Zh-v946.apk**](https://github.com/jiankujidu/OlliteRT-Zh/releases/download/v0.9.15-v946/OlliteRT-Zh-v946.apk) | 116 MB | 最新稳定版（v0.9.15） |
+| v947 | [**OlliteRT-Zh-v947.apk**](https://github.com/jiankujidu/OlliteRT-Zh/releases/download/v0.9.16-v947/OlliteRT-Zh-v947.apk) | 116 MB | 最新稳定版（v0.9.16） |
 
 **更新记录**
+
+- **v947**（v0.9.16）：**彻底解决回答过程中文字一闪一闪的问题** —— 上一版虽已做写入节流，但真正的元凶没除：反编译 `multiplatform-markdown-renderer` 的 `MarkdownStateImpl.updateInput()` 可见，只要 `retainState` 为 false（默认），**每次正文变化都会先把状态清成 `State.Loading`**，而项目里的 `MarkdownText` 在 `Loading` 时什么都不渲染（一个空 Box）——于是模型每吐一个字，就经历一次「文字消失 → 重新解析 → 文字出现」，肉眼看就是持续闪烁。同时 `State.Success` 每次都新建实例且未覆写 `equals`，导致整块内容每个 token 全量重组。现改为：**流式输出期间直接渲染纯文本**（单个 Text 节点只增长、不重建，绝不走 Markdown 解析），**回答结束后才解析一次 Markdown 并一次性切换为富文本版**（含代码块、复制、HTML 预览、折叠思考等）；写库节流同步放宽到 220ms 进一步降低重组频率。副作用也一并消除：流式过程中不会再因 Markdown 强调/标题样式突然生效而中途抖一下。版号升至 **0.9.16**。
 
 - **v946**（v0.9.15）：**修复对话界面流式输出严重闪烁 + 修好 HTML 看不到效果** —— ①闪烁根因：旧实现把**每一个 token 都全量写 Room**，导致整张表秒级重查几十次、整个列表与 Markdown 反复重组，同时滚动逻辑以「流式内容长度」为 key，**每个 token 都硬跳一次到底部**，两项叠加就是肉眼可见的抽搐式闪烁。现改为：写库节流至约 8 次/秒（完成/停止时必写最终全文，内容不丢），滚动拆成「新消息动画滚一次」+「仅当用户已停在底部才跟滚」，回看长回答不再被强行拽到底；②HTML 显示不了的根因：本地小模型很少吐标准 ` ```html ` 围栏，而是**直接输出裸 HTML**，旧版把它当 Markdown 渲染，标签原样显示为文本且没有预览入口。现自动识别 HTML 回答并渲染成**源码卡片（含复制 + 预览）**，且只在流式结束后判定，避免气泡在两种渲染间反复跳变；③预览弹窗加固：给 Dialog 明确宽高（原先 wrap-content 导致 WebView 量到 0 高度、页面空白）、禁止每次重组重复 loadData（反复重载白屏）、自动为裸片段补全 `<!doctype>` / viewport / 基础排版样式，外链 CDN 资源直接阻断（离线场景不再卡白屏等待）。版号升至 **0.9.15**。
 
