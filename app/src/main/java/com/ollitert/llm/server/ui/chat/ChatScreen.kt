@@ -41,6 +41,7 @@ import androidx.compose.material.icons.outlined.Menu
 import androidx.compose.material.icons.outlined.Stop
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -91,8 +92,26 @@ fun ChatScreen(
   var input by remember { mutableStateOf("") }
   val listState = rememberLazyListState()
 
-  LaunchedEffect(messages.size, messages.lastOrNull()?.content?.length) {
+  // The old effect keyed on the streaming content length, so every single token
+  // restarted it and hard-jumped the list — the answer visibly strobed as it arrived.
+  // Now: a new message animates into view once, and the growing reply only follows
+  // the caret while the user is already parked at the bottom (reading back through a
+  // long answer no longer gets yanked to the end).
+  val atBottom by remember {
+    derivedStateOf {
+      val lastVisible = listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: -1
+      lastVisible >= messages.lastIndex
+    }
+  }
+
+  LaunchedEffect(messages.size) {
     if (messages.isNotEmpty()) {
+      runCatching { listState.animateScrollToItem(messages.lastIndex) }
+    }
+  }
+
+  LaunchedEffect(messages.lastOrNull()?.content?.length) {
+    if (atBottom && messages.isNotEmpty()) {
       runCatching { listState.scrollToItem(messages.lastIndex) }
     }
   }
