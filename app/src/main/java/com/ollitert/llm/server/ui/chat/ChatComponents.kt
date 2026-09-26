@@ -416,7 +416,16 @@ internal fun MessageRow(
   onRegenerate: () -> Unit,
 ) {
   val isUser = msg.role == "user"
-  val segments = remember(msg.content) { parseMessage(msg.content) }
+  // Two different renderings on purpose:
+  //  * a streaming answer is shown as plain, cheap text — no per-token markdown
+  //    re-parse, no re-layout of a rich tree;
+  //  * once it is finished we parse markdown exactly once and show the rich version.
+  // This also stops the text from twitching as emphasis/heading styling kicks in
+  // mid-word during streaming.
+  val segments =
+    remember(msg.content, msg.streaming) {
+      if (msg.streaming) emptyList() else parseMessage(msg.content)
+    }
   val hasBody = segments.any { it.type != SegType.THINK && it.text.isNotBlank() }
   // Thinking models (e.g. Agents-A1) stream their reasoning inside <think> … </think>
   // on the same channel as the answer, and often never emit a closing tag or a final
@@ -468,7 +477,15 @@ internal fun MessageRow(
           Spacer(Modifier.height(3.dp))
         }
 
-        if (hasBody) {
+        if (msg.streaming) {
+          // Plain text while the answer arrives: one Text node that only ever grows,
+          // so nothing gets cleared and re-drawn between tokens.
+          Text(
+            if (msg.content.isBlank()) "思考中…" else msg.content,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurface,
+          )
+        } else if (hasBody) {
           if (htmlCandidates.isNotEmpty()) {
             segments.forEachIndexed { index, seg ->
               when (seg.type) {
@@ -504,12 +521,6 @@ internal fun MessageRow(
           Text(
             "模型只输出了思考内容、没有生成正文。可在「模型」页把该模型的「思考」关掉，再点重新生成。",
             style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-          )
-        } else if (msg.streaming) {
-          Text(
-            "思考中…",
-            style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
           )
         } else if (!isUser) {
