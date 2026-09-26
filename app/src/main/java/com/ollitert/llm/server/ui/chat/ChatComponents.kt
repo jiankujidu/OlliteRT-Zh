@@ -16,7 +16,9 @@
 
 package com.ollitert.llm.server.ui.chat
 
+import android.webkit.WebSettings
 import android.webkit.WebView
+import android.widget.TextView
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
@@ -49,6 +51,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
@@ -57,6 +60,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.window.Dialog
+import android.widget.Toast
 import com.ollitert.llm.server.data.db.ChatMessageEntity
 import com.ollitert.llm.server.ui.common.MarkdownText
 import com.ollitert.llm.server.ui.theme.OlliteRTPrimary
@@ -166,8 +170,16 @@ internal fun CodeBlockCard(
   code: String,
 ) {
   val clipboard = LocalClipboardManager.current
+  val context = LocalContext.current
   var copied by remember { mutableStateOf(false) }
-  val isHtml = lang.equals("html", ignoreCase = true) || lang.equals("htm", ignoreCase = true)
+  val looksLikeHtml =
+    code.contains("<html", ignoreCase = true) ||
+      code.contains("<!doctype", ignoreCase = true) ||
+      (code.contains("<div") && code.contains("</div>"))
+  val isHtml =
+    lang.equals("html", ignoreCase = true) ||
+      lang.equals("htm", ignoreCase = true) ||
+      looksLikeHtml
   var showPreview by remember { mutableStateOf(false) }
 
   Surface(
@@ -207,6 +219,7 @@ internal fun CodeBlockCard(
             onClick = {
               clipboard.setText(AnnotatedString(code))
               copied = true
+              Toast.makeText(context, "已复制到剪贴板", Toast.LENGTH_SHORT).show()
             },
             modifier = Modifier.size(28.dp),
           ) {
@@ -214,7 +227,7 @@ internal fun CodeBlockCard(
               if (copied) Icons.Outlined.Check else Icons.Outlined.ContentCopy,
               contentDescription = "复制代码",
               Modifier.size(18.dp),
-              tint = MaterialTheme.colorScheme.onSurfaceVariant,
+              tint = if (copied) OlliteRTPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
             )
           }
         }
@@ -267,13 +280,32 @@ internal fun HtmlPreviewDialog(
         AndroidView(
           modifier = Modifier.weight(1f).fillMaxWidth(),
           factory = { ctx ->
-            WebView(ctx).apply {
-              settings.javaScriptEnabled = true
-              settings.domStorageEnabled = true
-              loadDataWithBaseURL(null, html, "text/html", "utf-8", null)
+            try {
+              WebView(ctx).apply {
+                settings.javaScriptEnabled = true
+                settings.domStorageEnabled = true
+                settings.mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
+                settings.allowFileAccess = false
+                settings.allowContentAccess = false
+                settings.loadWithOverviewMode = true
+                settings.useWideViewPort = true
+                loadDataWithBaseURL(null, html, "text/html", "utf-8", null)
+              }
+            } catch (e: Exception) {
+              TextView(ctx).apply {
+                text = "预览不可用：${e.localizedMessage}"
+                setTextColor(0xFFB00020.toInt())
+                setPadding(16, 16, 16, 16)
+              }
             }
           },
-          update = { it.loadDataWithBaseURL(null, html, "text/html", "utf-8", null) },
+          update = { view ->
+            if (view is WebView) {
+              runCatching {
+                view.loadDataWithBaseURL(null, html, "text/html", "utf-8", null)
+              }
+            }
+          },
         )
         Row(Modifier.padding(12.dp)) {
           TextButton(onClick = { clipboard.setText(AnnotatedString(html)) }) {
